@@ -1,4 +1,4 @@
-// api/config.js - 生产版配置管理API
+// api/config.js - 修复版配置管理API
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.SUPABASE_URL
@@ -91,18 +91,69 @@ export default async function handler(req, res) {
         });
       }
 
-      // 保存到数据库
-      const { error } = await supabase
+      // 先检查记录是否存在
+      const { data: existingData, error: checkError } = await supabase
         .from('api_config')
-        .upsert({
-          key: 'inspect_response',
-          value: newConfig,
-          updated_at: new Date().toISOString()
-        });
+        .select('id')
+        .eq('key', 'inspect_response')
+        .single();
+
+      let result;
+
+      if (existingData) {
+        // 记录存在，执行更新
+        console.log('📝 更新现有配置记录');
+        result = await supabase
+          .from('api_config')
+          .update({
+            value: newConfig,
+            updated_at: new Date().toISOString()
+          })
+          .eq('key', 'inspect_response')
+          .select();
+      } else {
+        // 记录不存在，执行插入
+        console.log('📝 创建新配置记录');
+        result = await supabase
+          .from('api_config')
+          .insert({
+            key: 'inspect_response',
+            value: newConfig,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .select();
+      }
+
+      const { data, error } = result;
 
       if (error) {
+        // 如果还是遇到唯一约束错误，尝试强制更新
+        if (error.code === '23505') {
+          console.log('🔄 遇到唯一约束错误，尝试强制更新');
+          const { data: forceData, error: forceError } = await supabase
+            .from('api_config')
+            .update({
+              value: newConfig,
+              updated_at: new Date().toISOString()
+            })
+            .eq('key', 'inspect_response')
+            .select();
+
+          if (forceError) {
+            throw forceError;
+          }
+
+          return res.status(200).json({
+            success: true,
+            message: '配置已强制更新',
+            config: newConfig
+          });
+        }
         throw error;
       }
+
+      console.log('✅ 配置保存成功');
 
       res.status(200).json({
         success: true,
@@ -118,10 +169,10 @@ export default async function handler(req, res) {
     }
 
   } catch (error) {
-    console.error('配置操作失败:', error.message);
+    console.error('配置操作失败:', error);
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message || '配置操作失败'
     });
   }
 }
