@@ -7,5 +7,40 @@
 </head>
 <body>
     API请求监控面板系统，被动监控接口：
+
+    <br><br>
+
+    SUPABASE_URL，SUPABASE_ANON_KEY
+
+
+    # 返回特定状态码
+curl "https://你的域名/api/inspect?_status=404"
+
+# 设置响应延时
+curl "https://你的域名/api/inspect?_delay=2000"
+
+# 自定义消息
+curl "https://你的域名/api/inspect?_message=自定义成功消息"
+
+# 返回错误
+curl "https://你的域名/api/inspect?_error=自定义错误信息"
+
+
+
+模板变量支持：
+
+{{timestamp}} - 当前时间戳
+{{requestId}} - 唯一请求ID
+{{method}} - 请求方法
+{{url}} - 请求URL
+{{ip}} - 客户端IP
+{{userAgent}} - 用户代理
+{{processingTime}} - 处理时间
+
+
+
+
+第三方请求：https://你的域名/api/inspect
+管理面板：https://你的域名/dashboard.html
 </body>
 </html>
