@@ -1,4 +1,4 @@
-// api/inspect.js - 修复版API探测器
+// api/inspect.js - 安全版API探测器（兼容现有数据库结构）
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.SUPABASE_URL
@@ -131,22 +131,20 @@ export default async function handler(req, res) {
 
     console.log(`👤 客户端信息: IP=${clientIP}, Browser=${browser}, OS=${os}, Bot=${isBot}`);
 
-    // 构建请求信息
+    // 构建请求信息（只包含数据库中存在的字段）
     const requestInfo = {
       method: req.method,
       url: req.url,
       full_url: `https://${req.headers.host || 'unknown'}${req.url}`,
-      protocol: req.headers['x-forwarded-proto'] || 'https',
       ip: clientIP,
       user_agent: userAgent,
       browser: browser,
       os: os,
       is_bot: isBot,
-      country: req.headers['cf-ipcountry'] || null,
-      city: req.headers['cf-ipcity'] || null,
+      country: req.headers['cf-ipcountry'] || req.headers['x-vercel-ip-country'] || null,
+      city: req.headers['cf-ipcity'] || req.headers['x-vercel-ip-city'] || null,
       headers: JSON.stringify(req.headers),
       content_type: req.headers['content-type'] || null,
-      content_length: req.headers['content-length'] || (bodySize > 0 ? bodySize.toString() : null),
       accept: req.headers['accept'] || null,
       accept_language: req.headers['accept-language'] || null,
       accept_encoding: req.headers['accept-encoding'] || null,
@@ -242,23 +240,70 @@ export default async function handler(req, res) {
     const finalStatus = responseConfig.response?.status || 200;
     const finalMessage = responseBody?.message || '请求已处理';
 
-    // 同步保存日志（重要：确保保存成功）
+    // 同步保存日志
     if (supabase) {
       try {
         console.log('💾 开始保存请求日志...');
         
-        requestInfo.processing_time = Date.now() - startTime;
-        requestInfo.response_status = finalStatus;
-        requestInfo.response_message = finalMessage;
-        
+        // 添加处理时间和响应信息（如果字段存在）
+        const finalRequestInfo = {
+          ...requestInfo,
+          processing_time: Date.now() - startTime,
+          response_status: finalStatus,
+          response_message: finalMessage
+        };
+
+        // 尝试保存，如果某些字段不存在会被忽略
         const { data, error } = await supabase
           .from('api_requests')
-          .insert([requestInfo])
+          .insert([finalRequestInfo])
           .select();
 
         if (error) {
           console.error('❌ 数据库插入失败:', error);
-          console.error('插入的数据:', JSON.stringify(requestInfo, null, 2));
+          
+          // 如果是字段不存在的错误，尝试使用基础字段保存
+          if (error.code === 'PGRST204') {
+            console.log('🔄 尝试使用基础字段保存...');
+            
+            const basicRequestInfo = {
+              method: requestInfo.method,
+              url: requestInfo.url,
+              full_url: requestInfo.full_url,
+              ip: requestInfo.ip,
+              user_agent: requestInfo.user_agent,
+              browser: requestInfo.browser,
+              os: requestInfo.os,
+              is_bot: requestInfo.is_bot,
+              country: requestInfo.country,
+              city: requestInfo.city,
+              headers: requestInfo.headers,
+              content_type: requestInfo.content_type,
+              accept: requestInfo.accept,
+              accept_language: requestInfo.accept_language,
+              accept_encoding: requestInfo.accept_encoding,
+              origin: requestInfo.origin,
+              referer: requestInfo.referer,
+              query_params: requestInfo.query_params,
+              query_count: requestInfo.query_count,
+              body_content: requestInfo.body_content,
+              raw_body: requestInfo.raw_body,
+              body_type: requestInfo.body_type,
+              body_size: requestInfo.body_size,
+              created_at: requestInfo.created_at
+            };
+            
+            const { data: basicData, error: basicError } = await supabase
+              .from('api_requests')
+              .insert([basicRequestInfo])
+              .select();
+              
+            if (basicError) {
+              console.error('❌ 基础字段保存也失败:', basicError);
+            } else {
+              console.log('✅ 基础字段保存成功, ID:', basicData?.[0]?.id);
+            }
+          }
         } else {
           console.log('✅ 请求日志保存成功, ID:', data?.[0]?.id);
         }
@@ -282,8 +327,7 @@ export default async function handler(req, res) {
       success: false,
       error: 'Internal Server Error',
       message: '服务器内部错误',
-      timestamp: new Date().toISOString(),
-      debug: error.message
+      timestamp: new Date().toISOString()
     });
   }
 }
