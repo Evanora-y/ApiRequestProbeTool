@@ -1,265 +1,210 @@
-// api/logs.js - 增强版日志查询API
+// api/logs.js - 调试版本
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.SUPABASE_URL
 const supabaseKey = process.env.SUPABASE_ANON_KEY
 
-const supabase = createClient(supabaseUrl, supabaseKey)
-
 export default async function handler(req, res) {
   // 设置CORS头
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', '*');
-  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.setHeader('Content-Type', 'application/json');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
   try {
+    console.log('🔍 开始查询日志...');
+    console.log('环境变量检查:');
+    console.log('SUPABASE_URL:', supabaseUrl ? '已设置' : '未设置');
+    console.log('SUPABASE_ANON_KEY:', supabaseKey ? '已设置' : '未设置');
+
+    if (!supabaseUrl || !supabaseKey) {
+      return res.status(500).json({
+        success: false,
+        error: 'Supabase环境变量未设置',
+        logs: []
+      });
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    console.log('✅ Supabase客户端已初始化');
+
     // 获取查询参数
-    const { 
-      limit = 50, 
-      method, 
-      ip, 
-      since, 
-      status,
-      search,
-      browser,
-      os,
-      country,
-      hasBody,
-      bodyType,
-      page = 1
-    } = req.query;
-    
-    let query = supabase
+    const { limit = 20 } = req.query;
+    console.log('查询参数:', { limit });
+
+    // 执行查询
+    const { data: logs, error, count } = await supabase
       .from('api_requests')
-      .select('*')
-      .order('created_at', { ascending: false });
+      .select('*', { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .limit(parseInt(limit));
 
-    // 按方法过滤
-    if (method) {
-      query = query.eq('method', method.toUpperCase());
-    }
-
-    // 按IP过滤
-    if (ip) {
-      query = query.ilike('ip', `%${ip}%`);
-    }
-
-    // 按响应状态过滤
-    if (status) {
-      query = query.eq('response_status', parseInt(status));
-    }
-
-    // 按浏览器过滤
-    if (browser) {
-      query = query.eq('browser', browser);
-    }
-
-    // 按操作系统过滤
-    if (os) {
-      query = query.eq('os', os);
-    }
-
-    // 按国家过滤
-    if (country) {
-      query = query.eq('country', country);
-    }
-
-    // 按请求体类型过滤
-    if (bodyType) {
-      query = query.eq('body_type', bodyType);
-    }
-
-    // 是否包含请求体
-    if (hasBody === 'true') {
-      query = query.not('body_content', 'is', null);
-    } else if (hasBody === 'false') {
-      query = query.is('body_content', null);
-    }
-
-    // 按时间过滤
-    if (since) {
-      query = query.gte('created_at', since);
-    }
-
-    // 搜索功能（搜索URL、User-Agent、IP等）
-    if (search) {
-      query = query.or(`url.ilike.%${search}%,user_agent.ilike.%${search}%,ip.ilike.%${search}%,referer.ilike.%${search}%`);
-    }
-
-    // 分页处理
-    const pageNum = Math.max(1, parseInt(page));
-    const limitNum = Math.min(parseInt(limit), 100); // 最大100条
-    const offset = (pageNum - 1) * limitNum;
-    
-    query = query.range(offset, offset + limitNum - 1);
-
-    const { data: logs, error, count } = await query;
+    console.log('查询结果:');
+    console.log('- 错误:', error);
+    console.log('- 数据数量:', logs ? logs.length : 0);
+    console.log('- 总数:', count);
 
     if (error) {
-      throw error;
+      console.error('❌ 查询失败:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message,
+        logs: [],
+        debug: {
+          code: error.code,
+          details: error.details,
+          hint: error.hint
+        }
+      });
     }
 
-    // 获取统计信息
-    const statsQuery = supabase
-      .from('api_requests')
-      .select('method, response_status, browser, os, country, body_type, created_at', { count: 'exact' });
+    // 如果没有数据，返回调试信息
+    if (!logs || logs.length === 0) {
+      console.log('📭 没有找到数据');
+      
+      // 检查表是否存在
+      const { data: tables, error: tablesError } = await supabase
+        .from('information_schema.tables')
+        .select('table_name')
+        .eq('table_name', 'api_requests');
 
-    const { data: statsData, count: totalCount } = await statsQuery;
+      return res.status(200).json({
+        success: true,
+        total: 0,
+        filtered: 0,
+        logs: [],
+        stats: {
+          total: 0,
+          todayCount: 0,
+          weekCount: 0,
+          uniqueIPs: 0,
+          avgProcessingTime: 0,
+          methods: {},
+          statuses: {},
+          browsers: {},
+          operatingSystems: {},
+          countries: {},
+          bodyTypes: {}
+        },
+        debug: {
+          message: '没有找到数据',
+          tableExists: !tablesError && tables && tables.length > 0,
+          tablesError: tablesError?.message
+        }
+      });
+    }
 
-    // 处理统计数据
+    console.log('✅ 查询成功，处理数据...');
+
+    // 处理日志数据
+    const processedLogs = logs.map(log => ({
+      id: log.id,
+      timestamp: log.created_at,
+      localTime: new Date(log.created_at).toLocaleString('zh-CN'),
+      method: log.method,
+      url: log.url,
+      fullUrl: log.full_url,
+      ip: log.ip,
+      userAgent: log.user_agent,
+      browser: log.browser || 'Unknown',
+      os: log.os || 'Unknown',
+      isBot: log.is_bot || false,
+      country: log.country,
+      city: log.city,
+      headers: log.headers ? JSON.parse(log.headers) : {},
+      query: log.query_params ? JSON.parse(log.query_params) : {},
+      queryCount: log.query_count || 0,
+      body: log.body_content ? JSON.parse(log.body_content) : null,
+      rawBody: log.raw_body,
+      bodyType: log.body_type || 'empty',
+      bodySize: log.body_size || 0,
+      contentType: log.content_type,
+      origin: log.origin,
+      referer: log.referer,
+      responseStatus: log.response_status || 200,
+      responseMessage: log.response_message,
+      processingTime: log.processing_time || 0,
+      processedAt: new Date(log.created_at).getTime()
+    }));
+
+    // 基础统计
     const stats = {
-      total: totalCount || 0,
+      total: count || logs.length,
+      todayCount: 0,
+      weekCount: 0,
+      uniqueIPs: new Set(logs.map(log => log.ip)).size,
+      avgProcessingTime: Math.round(
+        logs.reduce((sum, log) => sum + (log.processing_time || 0), 0) / logs.length
+      ),
       methods: {},
       statuses: {},
       browsers: {},
       operatingSystems: {},
       countries: {},
-      bodyTypes: {},
-      todayCount: 0,
-      weekCount: 0,
-      uniqueIPs: new Set(),
-      avgProcessingTime: 0
+      bodyTypes: {}
     };
 
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    let totalProcessingTime = 0;
-    let processingTimeCount = 0;
-
-    if (statsData) {
-      statsData.forEach(item => {
-        // 统计方法
-        stats.methods[item.method] = (stats.methods[item.method] || 0) + 1;
-        
-        // 统计状态码
-        if (item.response_status) {
-          stats.statuses[item.response_status] = (stats.statuses[item.response_status] || 0) + 1;
-        }
-        
-        // 统计浏览器
-        if (item.browser && item.browser !== 'Unknown') {
-          stats.browsers[item.browser] = (stats.browsers[item.browser] || 0) + 1;
-        }
-        
-        // 统计操作系统
-        if (item.os && item.os !== 'Unknown') {
-          stats.operatingSystems[item.os] = (stats.operatingSystems[item.os] || 0) + 1;
-        }
-        
-        // 统计国家
-        if (item.country) {
-          stats.countries[item.country] = (stats.countries[item.country] || 0) + 1;
-        }
-        
-        // 统计请求体类型
-        if (item.body_type && item.body_type !== 'empty') {
-          stats.bodyTypes[item.body_type] = (stats.bodyTypes[item.body_type] || 0) + 1;
-        }
-        
-        // 统计时间范围
-        const itemDate = new Date(item.created_at);
-        if (itemDate >= today) {
-          stats.todayCount++;
-        }
-        if (itemDate >= weekAgo) {
-          stats.weekCount++;
-        }
-      });
-    }
-
-    // 处理日志数据，转换为前端需要的格式
-    const processedLogs = logs ? logs.map(log => {
-      // 收集处理时间用于计算平均值
-      if (log.processing_time) {
-        totalProcessingTime += log.processing_time;
-        processingTimeCount++;
+    // 统计各项数据
+    logs.forEach(log => {
+      // 方法统计
+      stats.methods[log.method] = (stats.methods[log.method] || 0) + 1;
+      
+      // 状态码统计
+      const status = log.response_status || 200;
+      stats.statuses[status] = (stats.statuses[status] || 0) + 1;
+      
+      // 浏览器统计
+      const browser = log.browser || 'Unknown';
+      if (browser !== 'Unknown') {
+        stats.browsers[browser] = (stats.browsers[browser] || 0) + 1;
       }
       
-      // 收集唯一IP
-      if (log.ip && log.ip !== 'unknown') {
-        stats.uniqueIPs.add(log.ip);
+      // 操作系统统计
+      const os = log.os || 'Unknown';
+      if (os !== 'Unknown') {
+        stats.operatingSystems[os] = (stats.operatingSystems[os] || 0) + 1;
       }
+      
+      // 国家统计
+      if (log.country) {
+        stats.countries[log.country] = (stats.countries[log.country] || 0) + 1;
+      }
+      
+      // 请求体类型统计
+      const bodyType = log.body_type || 'empty';
+      if (bodyType !== 'empty') {
+        stats.bodyTypes[bodyType] = (stats.bodyTypes[bodyType] || 0) + 1;
+      }
+    });
 
-      return {
-        id: log.id,
-        timestamp: log.created_at,
-        localTime: new Date(log.created_at).toLocaleString('zh-CN'),
-        method: log.method,
-        url: log.url,
-        fullUrl: log.full_url,
-        
-        // 客户端信息
-        ip: log.ip,
-        userAgent: log.user_agent,
-        browser: log.browser,
-        os: log.os,
-        isBot: log.is_bot,
-        country: log.country,
-        city: log.city,
-        
-        // 请求信息
-        headers: log.headers ? JSON.parse(log.headers) : {},
-        query: log.query_params ? JSON.parse(log.query_params) : {},
-        queryCount: log.query_count || 0,
-        
-        // 请求体
-        body: log.body_content ? JSON.parse(log.body_content) : null,
-        rawBody: log.raw_body,
-        bodyType: log.body_type,
-        bodySize: log.body_size || 0,
-        
-        // 重要头信息
-        contentType: log.content_type,
-        contentLength: log.content_length,
-        accept: log.accept,
-        acceptLanguage: log.accept_language,
-        acceptEncoding: log.accept_encoding,
-        origin: log.origin,
-        referer: log.referer,
-        authorization: log.authorization,
-        cookie: log.cookie,
-        
-        // 特殊参数
-        specialParams: log.special_params ? JSON.parse(log.special_params) : null,
-        
-        // 响应信息
-        responseStatus: log.response_status,
-        responseMessage: log.response_message,
-        processingTime: log.processing_time,
-        
-        // 时间信息
-        processedAt: new Date(log.created_at).getTime()
-      };
-    }) : [];
-
-    // 完善统计信息
-    stats.uniqueIPs = stats.uniqueIPs.size;
-    stats.avgProcessingTime = processingTimeCount > 0 ? Math.round(totalProcessingTime / processingTimeCount) : 0;
+    console.log('✅ 数据处理完成，返回结果');
 
     res.status(200).json({
       success: true,
-      total: totalCount || 0,
+      total: count || logs.length,
       filtered: processedLogs.length,
-      page: pageNum,
-      limit: limitNum,
       logs: processedLogs,
       stats: stats,
-      lastUpdate: processedLogs.length > 0 ? processedLogs[0].timestamp : null
+      lastUpdate: processedLogs.length > 0 ? processedLogs[0].timestamp : null,
+      debug: {
+        rawDataCount: logs.length,
+        processedDataCount: processedLogs.length
+      }
     });
 
   } catch (error) {
-    console.error('查询日志失败:', error);
+    console.error('💥 查询日志异常:', error);
     res.status(500).json({
       success: false,
       error: error.message,
       logs: [],
-      stats: {}
+      debug: {
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      }
     });
   }
 }
