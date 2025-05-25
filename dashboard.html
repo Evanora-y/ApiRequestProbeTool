@@ -41,6 +41,37 @@
             font-weight: 700;
         }
 
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            justify-content: center;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: rgba(255, 255, 255, 0.8);
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
         .stats {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -96,7 +127,7 @@
             font-size: 0.9rem;
         }
 
-        input, select, button {
+        input, select, button, textarea {
             padding: 10px 15px;
             border: 2px solid #e1e8ed;
             border-radius: 8px;
@@ -104,7 +135,7 @@
             transition: all 0.3s ease;
         }
 
-        input:focus, select:focus {
+        input:focus, select:focus, textarea:focus {
             outline: none;
             border-color: #3498db;
             box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
@@ -124,10 +155,16 @@
             transform: translateY(-2px);
         }
 
-        .auto-refresh {
-            display: flex;
-            align-items: center;
-            gap: 10px;
+        button.danger {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+
+        button.success {
+            background: linear-gradient(135deg, #27ae60, #229954);
+        }
+
+        .search-box {
+            width: 300px;
         }
 
         .logs-container {
@@ -148,8 +185,8 @@
 
         .log-header {
             display: grid;
-            grid-template-columns: auto 1fr auto auto auto;
-            gap: 20px;
+            grid-template-columns: auto 1fr auto auto auto auto;
+            gap: 15px;
             padding: 20px;
             align-items: center;
             cursor: pointer;
@@ -169,6 +206,20 @@
         .method-PUT { background: #cce7ff; color: #004085; }
         .method-DELETE { background: #f8d7da; color: #721c24; }
         .method-PATCH { background: #e2e3e5; color: #383d41; }
+
+        .status-code {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 0.75rem;
+            min-width: 45px;
+            text-align: center;
+        }
+
+        .status-2xx { background: #d4edda; color: #155724; }
+        .status-3xx { background: #fff3cd; color: #856404; }
+        .status-4xx { background: #f8d7da; color: #721c24; }
+        .status-5xx { background: #f5c6cb; color: #721c24; }
 
         .log-url {
             font-family: 'Courier New', monospace;
@@ -246,21 +297,60 @@
             word-break: break-word;
         }
 
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: #6c757d;
+        .config-form {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
         }
 
-        .empty-state h3 {
-            margin-bottom: 10px;
-            color: #495057;
+        .form-group {
+            margin-bottom: 20px;
         }
 
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: #6c757d;
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .json-editor {
+            height: 300px;
+            font-family: 'Courier New', monospace;
+            resize: vertical;
+        }
+
+        .preset-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .preset-btn {
+            padding: 8px 16px;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+        }
+
+        .preset-btn:hover {
+            background: #e9ecef;
+            transform: translateY(-1px);
         }
 
         .status-indicator {
@@ -274,8 +364,45 @@
         .status-online { background: #28a745; }
         .status-offline { background: #dc3545; }
 
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6c757d;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 20px;
+            padding: 20px;
+        }
+
+        .page-btn {
+            padding: 8px 12px;
+            min-width: 40px;
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .page-btn:hover, .page-btn.active {
+            background: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+
         @media (max-width: 768px) {
-            .control-row {
+            .control-row, .form-row {
                 flex-direction: column;
                 align-items: stretch;
             }
@@ -288,6 +415,14 @@
             
             .header h1 {
                 font-size: 1.8rem;
+            }
+
+            .tabs {
+                flex-wrap: wrap;
+            }
+
+            .search-box {
+                width: 100%;
             }
         }
     </style>
@@ -303,102 +438,287 @@
             </div>
         </div>
 
-        <div class="stats">
-            <div class="stat-card">
-                <div class="stat-number" id="totalRequests">0</div>
-                <div>总请求数</div>
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('logs')">📊 请求日志</button>
+            <button class="tab" onclick="switchTab('config')">⚙️ 响应配置</button>
+            <button class="tab" onclick="switchTab('stats')">📈 统计分析</button>
+        </div>
+
+        <!-- 日志面板 -->
+        <div id="logs-tab" class="tab-content active">
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalRequests">0</div>
+                    <div>总请求数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="todayRequests">0</div>
+                    <div>今日请求</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="uniqueIPs">0</div>
+                    <div>独立IP</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="avgProcessingTime">0ms</div>
+                    <div>平均响应时间</div>
+                </div>
             </div>
-            <div class="stat-card">
-                <div class="stat-number" id="todayRequests">0</div>
-                <div>今日请求</div>
+
+            <div class="controls">
+                <div class="control-row">
+                    <div class="control-group">
+                        <label>搜索</label>
+                        <input type="text" id="searchFilter" class="search-box" placeholder="搜索URL、IP、User-Agent...">
+                    </div>
+                    <div class="control-group">
+                        <label>请求方法</label>
+                        <select id="methodFilter">
+                            <option value="">全部方法</option>
+                            <option value="GET">GET</option>
+                            <option value="POST">POST</option>
+                            <option value="PUT">PUT</option>
+                            <option value="DELETE">DELETE</option>
+                            <option value="PATCH">PATCH</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label>状态码</label>
+                        <select id="statusFilter">
+                            <option value="">全部状态</option>
+                            <option value="200">200 成功</option>
+                            <option value="400">400 错误请求</option>
+                            <option value="401">401 未授权</option>
+                            <option value="404">404 未找到</option>
+                            <option value="500">500 服务器错误</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label>浏览器</label>
+                        <select id="browserFilter">
+                            <option value="">全部浏览器</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="control-row">
+                    <div class="control-group">
+                        <label>IP地址</label>
+                        <input type="text" id="ipFilter" placeholder="过滤IP地址">
+                    </div>
+                    <div class="control-group">
+                        <label>请求体类型</label>
+                        <select id="bodyTypeFilter">
+                            <option value="">全部类型</option>
+                            <option value="json">JSON</option>
+                            <option value="text">文本</option>
+                            <option value="empty">无请求体</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label>显示数量</label>
+                        <select id="limitFilter">
+                            <option value="20">20条</option>
+                            <option value="50" selected>50条</option>
+                            <option value="100">100条</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label>&nbsp;</label>
+                        <button onclick="loadLogs()">🔄 刷新数据</button>
+                    </div>
+                </div>
+                
+                <div class="control-row">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <input type="checkbox" id="autoRefresh" checked>
+                        <label for="autoRefresh">自动刷新 (10秒)</label>
+                    </div>
+                    <button onclick="clearLogs()" class="danger">🗑️ 清空日志</button>
+                    <button onclick="exportLogs()">📥 导出数据</button>
+                </div>
             </div>
-            <div class="stat-card">
-                <div class="stat-number" id="uniqueIPs">0</div>
-                <div>独立IP</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="lastRequestTime">-</div>
-                <div>最后请求</div>
+
+            <div class="logs-container">
+                <div id="logsContent">
+                    <div class="loading">加载中...</div>
+                </div>
+                <div id="pagination" class="pagination" style="display: none;"></div>
             </div>
         </div>
 
-        <div class="controls">
-            <div class="control-row">
-                <div class="control-group">
-                    <label>请求方法</label>
-                    <select id="methodFilter">
-                        <option value="">全部方法</option>
-                        <option value="GET">GET</option>
-                        <option value="POST">POST</option>
-                        <option value="PUT">PUT</option>
-                        <option value="DELETE">DELETE</option>
-                        <option value="PATCH">PATCH</option>
+        <!-- 配置面板 -->
+        <div id="config-tab" class="tab-content">
+            <div class="config-form">
+                <h2 style="margin-bottom: 20px;">🔧 API响应配置</h2>
+                
+                <div class="preset-buttons">
+                    <button class="preset-btn" onclick="loadPreset('default')">默认响应</button>
+                    <button class="preset-btn" onclick="loadPreset('error')">错误响应</button>
+                    <button class="preset-btn" onclick="loadPreset('custom')">自定义成功</button>
+                    <button class="preset-btn" onclick="loadPreset('webhook')">Webhook响应</button>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>响应状态码</label>
+                        <select id="responseStatus">
+                            <option value="200">200 - 成功</option>
+                            <option value="201">201 - 已创建</option>
+                            <option value="400">400 - 错误请求</option>
+                            <option value="401">401 - 未授权</option>
+                            <option value="403">403 - 禁止访问</option>
+                            <option value="404">404 - 未找到</option>
+                            <option value="500">500 - 服务器错误</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>响应延时 (毫秒)</label>
+                        <input type="number" id="responseDelay" min="0" max="10000" value="0">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Content-Type</label>
+                    <select id="contentType">
+                        <option value="application/json">application/json</option>
+                        <option value="text/plain">text/plain</option>
+                        <option value="text/html">text/html</option>
+                        <option value="application/xml">application/xml</option>
                     </select>
                 </div>
-                <div class="control-group">
-                    <label>IP地址</label>
-                    <input type="text" id="ipFilter" placeholder="过滤IP地址">
+
+                <div class="form-group">
+                    <label>响应体 (JSON格式，支持模板变量)</label>
+                    <textarea id="responseBody" class="json-editor" placeholder='{"success": true, "message": "请求已处理", "timestamp": "{{timestamp}}"}'></textarea>
+                    <small style="color: #6c757d; margin-top: 5px; display: block;">
+                        支持的模板变量: {{timestamp}}, {{requestId}}, {{method}}, {{url}}, {{ip}}, {{userAgent}}, {{processingTime}}
+                    </small>
                 </div>
-                <div class="control-group">
-                    <label>显示数量</label>
-                    <select id="limitFilter">
-                        <option value="20">20条</option>
-                        <option value="50" selected>50条</option>
-                        <option value="100">100条</option>
-                    </select>
+
+                <div style="display: flex; gap: 15px; margin-top: 30px;">
+                    <button onclick="saveConfig()" class="success">💾 保存配置</button>
+                    <button onclick="loadConfig()">🔄 重新加载</button>
+                    <button onclick="testConfig()">🧪 测试配置</button>
                 </div>
-                <div class="control-group">
-                    <label>&nbsp;</label>
-                    <button onclick="loadLogs()">🔄 刷新数据</button>
-                </div>
-            </div>
-            
-            <div class="control-row">
-                <div class="auto-refresh">
-                    <input type="checkbox" id="autoRefresh" checked>
-                    <label for="autoRefresh">自动刷新 (5秒)</label>
-                </div>
-                <button onclick="clearLogs()" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">
-                    🗑️ 清空日志
-                </button>
-                <button onclick="exportLogs()">📥 导出数据</button>
+
+                <div id="configStatus" style="margin-top: 15px; padding: 10px; border-radius: 8px; display: none;"></div>
             </div>
         </div>
 
-        <div class="logs-container">
-            <div id="logsContent">
-                <div class="loading">加载中...</div>
+        <!-- 统计面板 -->
+        <div id="stats-tab" class="tab-content">
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-number" id="statsTotal">0</div>
+                    <div>总请求数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="statsToday">0</div>
+                    <div>今日请求</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="statsWeek">0</div>
+                    <div>本周请求</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="statsUniqueIPs">0</div>
+                    <div>独立访客</div>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                <div class="config-form">
+                    <h3>📊 请求方法分布</h3>
+                    <div id="methodsChart"></div>
+                </div>
+                
+                <div class="config-form">
+                    <h3>💻 浏览器分布</h3>
+                    <div id="browsersChart"></div>
+                </div>
+                
+                <div class="config-form">
+                    <h3>🌍 地区分布</h3>
+                    <div id="countriesChart"></div>
+                </div>
+                
+                <div class="config-form">
+                    <h3>📈 状态码分布</h3>
+                    <div id="statusChart"></div>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
+        let currentPage = 1;
         let autoRefreshInterval;
         
         // 获取API基础URL
         const API_BASE = window.location.origin;
         
-        async function loadLogs() {
+        // 标签切换
+        function switchTab(tabName) {
+            // 隐藏所有标签内容
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // 移除所有标签的active类
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // 显示选中的标签内容
+            document.getElementById(tabName + '-tab').classList.add('active');
+            
+            // 给选中的标签添加active类
+            event.target.classList.add('active');
+            
+            // 根据标签执行相应的初始化
+            if (tabName === 'logs') {
+                loadLogs();
+            } else if (tabName === 'config') {
+                loadConfig();
+            } else if (tabName === 'stats') {
+                loadStats();
+            }
+        }
+
+        async function loadLogs(page = 1) {
             try {
                 updateStatus('loading');
                 
                 const params = new URLSearchParams();
                 
+                const search = document.getElementById('searchFilter').value;
                 const method = document.getElementById('methodFilter').value;
+                const status = document.getElementById('statusFilter').value;
+                const browser = document.getElementById('browserFilter').value;
                 const ip = document.getElementById('ipFilter').value;
+                const bodyType = document.getElementById('bodyTypeFilter').value;
                 const limit = document.getElementById('limitFilter').value;
                 
+                if (search) params.append('search', search);
                 if (method) params.append('method', method);
+                if (status) params.append('status', status);
+                if (browser) params.append('browser', browser);
                 if (ip) params.append('ip', ip);
+                if (bodyType) params.append('bodyType', bodyType);
                 if (limit) params.append('limit', limit);
+                params.append('page', page);
                 
                 const response = await fetch(`${API_BASE}/api/logs?${params}`);
                 const data = await response.json();
                 
                 if (data.success) {
                     displayLogs(data.logs);
-                    updateStats(data.logs);
+                    updateStats(data.stats);
+                    updatePagination(data.page, Math.ceil(data.total / parseInt(limit)));
+                    updateFilters(data.stats);
                     updateStatus('online');
+                    currentPage = page;
                 } else {
                     throw new Error('获取数据失败');
                 }
@@ -409,7 +729,7 @@
                     '<div class="empty-state"><h3>❌ 加载失败</h3><p>请检查网络连接或API状态</p></div>';
             }
         }
-        
+
         function displayLogs(logs) {
             const container = document.getElementById('logsContent');
             
@@ -423,7 +743,8 @@
                     <div class="log-header" onclick="toggleDetails('${log.id}')">
                         <span class="log-method method-${log.method}">${log.method}</span>
                         <span class="log-url">${log.url}</span>
-                        <span class="log-ip">📍 ${log.ip}</span>
+                        <span class="status-code status-${Math.floor((log.responseStatus || 200) / 100)}xx">${log.responseStatus || 200}</span>
+                        <span class="log-ip">📍 ${log.ip} ${log.country ? '(' + log.country + ')' : ''}</span>
                         <span class="log-time">🕐 ${log.localTime}</span>
                         <button class="toggle-btn">▼</button>
                     </div>
@@ -432,16 +753,22 @@
                             <div class="detail-title">🔗 请求信息</div>
                             <div class="detail-content">
                                 <strong>完整URL:</strong> ${log.fullUrl}<br>
+                                <strong>浏览器:</strong> ${log.browser} (${log.os})<br>
                                 <strong>User-Agent:</strong> ${log.userAgent || '未提供'}<br>
                                 <strong>Content-Type:</strong> ${log.contentType || '未指定'}<br>
+                                <strong>Content-Length:</strong> ${log.contentLength || '未指定'}<br>
                                 <strong>Origin:</strong> ${log.origin || '未指定'}<br>
-                                <strong>Referer:</strong> ${log.referer || '未指定'}
+                                <strong>Referer:</strong> ${log.referer || '未指定'}<br>
+                                <strong>处理时间:</strong> ${log.processingTime || 0}ms<br>
+                                <strong>响应消息:</strong> ${log.responseMessage || '无'}<br>
+                                ${log.isBot ? '<strong>🤖 检测为机器人请求</strong><br>' : ''}
+                                ${log.specialParams ? '<strong>特殊参数:</strong> ' + JSON.stringify(log.specialParams) + '<br>' : ''}
                             </div>
                         </div>
                         
-                        ${Object.keys(log.query).length > 0 ? `
+                        ${log.queryCount > 0 ? `
                             <div class="detail-section">
-                                <div class="detail-title">❓ 查询参数</div>
+                                <div class="detail-title">❓ 查询参数 (${log.queryCount}个)</div>
                                 <div class="detail-content">
                                     <div class="json-content">${JSON.stringify(log.query, null, 2)}</div>
                                 </div>
@@ -450,7 +777,7 @@
                         
                         ${log.body && log.bodyType !== 'empty' ? `
                             <div class="detail-section">
-                                <div class="detail-title">📦 请求体 (${log.bodyType})</div>
+                                <div class="detail-title">📦 请求体 (${log.bodyType}, ${log.bodySize}字节)</div>
                                 <div class="detail-content">
                                     <div class="json-content">${typeof log.body === 'object' ? JSON.stringify(log.body, null, 2) : log.body}</div>
                                 </div>
@@ -469,45 +796,72 @@
             
             container.innerHTML = html;
         }
-        
+
+        function updateStats(stats) {
+            document.getElementById('totalRequests').textContent = stats.total || 0;
+            document.getElementById('todayRequests').textContent = stats.todayCount || 0;
+            document.getElementById('uniqueIPs').textContent = stats.uniqueIPs || 0;
+            document.getElementById('avgProcessingTime').textContent = (stats.avgProcessingTime || 0) + 'ms';
+        }
+
+        function updateFilters(stats) {
+            // 更新浏览器过滤器
+            const browserFilter = document.getElementById('browserFilter');
+            const currentBrowser = browserFilter.value;
+            browserFilter.innerHTML = '<option value="">全部浏览器</option>';
+            
+            if (stats.browsers) {
+                Object.entries(stats.browsers).forEach(([browser, count]) => {
+                    const option = document.createElement('option');
+                    option.value = browser;
+                    option.textContent = `${browser} (${count})`;
+                    browserFilter.appendChild(option);
+                });
+            }
+            
+            if (currentBrowser) {
+                browserFilter.value = currentBrowser;
+            }
+        }
+
+        function updatePagination(currentPage, totalPages) {
+            const pagination = document.getElementById('pagination');
+            
+            if (totalPages <= 1) {
+                pagination.style.display = 'none';
+                return;
+            }
+            
+            pagination.style.display = 'flex';
+            
+            let paginationHtml = '';
+            
+            // 上一页
+            if (currentPage > 1) {
+                paginationHtml += `<button class="page-btn" onclick="loadLogs(${currentPage - 1})">‹</button>`;
+            }
+            
+            // 页码
+            const startPage = Math.max(1, currentPage - 2);
+            const endPage = Math.min(totalPages, currentPage + 2);
+            
+            for (let i = startPage; i <= endPage; i++) {
+                paginationHtml += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="loadLogs(${i})">${i}</button>`;
+            }
+            
+            // 下一页
+            if (currentPage < totalPages) {
+                paginationHtml += `<button class="page-btn" onclick="loadLogs(${currentPage + 1})">›</button>`;
+            }
+            
+            pagination.innerHTML = paginationHtml;
+        }
+
         function toggleDetails(logId) {
             const details = document.getElementById(`details-${logId}`);
             details.classList.toggle('show');
         }
-        
-        function updateStats(logs) {
-            document.getElementById('totalRequests').textContent = logs.length;
-            
-            // 今日请求数
-            const today = new Date().toDateString();
-            const todayCount = logs.filter(log => 
-                new Date(log.timestamp).toDateString() === today
-            ).length;
-            document.getElementById('todayRequests').textContent = todayCount;
-            
-            // 独立IP数
-            const uniqueIPs = new Set(logs.map(log => log.ip)).size;
-            document.getElementById('uniqueIPs').textContent = uniqueIPs;
-            
-            // 最后请求时间
-            if (logs.length > 0) {
-                const lastTime = new Date(logs[0].timestamp);
-                const timeDiff = Date.now() - lastTime.getTime();
-                const seconds = Math.floor(timeDiff / 1000);
-                
-                let timeText;
-                if (seconds < 60) {
-                    timeText = `${seconds}秒前`;
-                } else if (seconds < 3600) {
-                    timeText = `${Math.floor(seconds / 60)}分钟前`;
-                } else {
-                    timeText = `${Math.floor(seconds / 3600)}小时前`;
-                }
-                
-                document.getElementById('lastRequestTime').textContent = timeText;
-            }
-        }
-        
+
         function updateStatus(status) {
             const indicator = document.getElementById('statusIndicator');
             const text = document.getElementById('statusText');
@@ -527,29 +881,59 @@
                     break;
             }
         }
-        
+
         function setupAutoRefresh() {
             const checkbox = document.getElementById('autoRefresh');
             
+            clearInterval(autoRefreshInterval);
+            
             if (checkbox.checked) {
-                autoRefreshInterval = setInterval(loadLogs, 5000);
-            } else {
-                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = setInterval(() => {
+                    if (document.getElementById('logs-tab').classList.contains('active')) {
+                        loadLogs(currentPage);
+                    }
+                }, 10000);
             }
         }
-        
-        function clearLogs() {
+
+        async function clearLogs() {
             if (confirm('确定要清空所有日志吗？此操作不可恢复。')) {
-                // 这里需要调用清空API
-                alert('清空功能需要后端API支持');
+                try {
+                    const response = await fetch(`${API_BASE}/api/clear`, {
+                        method: 'DELETE'
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        alert('日志已成功清空！');
+                        loadLogs(1);
+                    } else {
+                        alert('清空失败：' + result.error);
+                    }
+                } catch (error) {
+                    alert('清空失败：' + error.message);
+                }
             }
         }
-        
+
         function exportLogs() {
-            // 导出当前显示的日志为JSON文件
-            const logs = Array.from(document.querySelectorAll('.log-item')).map(item => {
-                // 这里简化处理，实际可以从数据源导出
-                return item.textContent;
+            // 简单的导出当前页面数据
+            const logs = [];
+            document.querySelectorAll('.log-item').forEach(item => {
+                const method = item.querySelector('.log-method').textContent;
+                const url = item.querySelector('.log-url').textContent;
+                const status = item.querySelector('.status-code').textContent;
+                const ip = item.querySelector('.log-ip').textContent;
+                const time = item.querySelector('.log-time').textContent;
+                
+                logs.push({
+                    method,
+                    url,
+                    status,
+                    ip,
+                    time
+                });
             });
             
             const dataStr = JSON.stringify(logs, null, 2);
@@ -560,15 +944,221 @@
             link.download = `api-logs-${new Date().toISOString().split('T')[0]}.json`;
             link.click();
         }
-        
-        // 事件监听
-        document.getElementById('autoRefresh').addEventListener('change', setupAutoRefresh);
-        document.getElementById('methodFilter').addEventListener('change', loadLogs);
-        document.getElementById('ipFilter').addEventListener('input', 
-            debounce(() => loadLogs(), 500)
-        );
-        document.getElementById('limitFilter').addEventListener('change', loadLogs);
-        
+
+        // 配置相关函数
+        async function loadConfig() {
+            try {
+                const response = await fetch(`${API_BASE}/api/config`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const config = data.config.response || {};
+                    
+                    document.getElementById('responseStatus').value = config.status || 200;
+                    document.getElementById('responseDelay').value = data.config.delay || 0;
+                    document.getElementById('contentType').value = config.headers?.['Content-Type'] || 'application/json';
+                    document.getElementById('responseBody').value = JSON.stringify(config.body || {}, null, 2);
+                    
+                    showConfigStatus('配置加载成功', 'success');
+                } else {
+                    showConfigStatus('配置加载失败', 'error');
+                }
+            } catch (error) {
+                showConfigStatus('配置加载失败：' + error.message, 'error');
+            }
+        }
+
+        async function saveConfig() {
+            try {
+                const config = {
+                    response: {
+                        status: parseInt(document.getElementById('responseStatus').value),
+                        headers: {
+                            'Content-Type': document.getElementById('contentType').value
+                        },
+                        body: JSON.parse(document.getElementById('responseBody').value)
+                    },
+                    delay: parseInt(document.getElementById('responseDelay').value) || 0,
+                    enableLogging: true
+                };
+                
+                const response = await fetch(`${API_BASE}/api/config`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(config)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showConfigStatus('配置保存成功！', 'success');
+                } else {
+                    showConfigStatus('配置保存失败：' + result.error, 'error');
+                }
+            } catch (error) {
+                if (error.name === 'SyntaxError') {
+                    showConfigStatus('JSON格式错误，请检查响应体格式', 'error');
+                } else {
+                    showConfigStatus('配置保存失败：' + error.message, 'error');
+                }
+            }
+        }
+
+        function testConfig() {
+            try {
+                const body = document.getElementById('responseBody').value;
+                JSON.parse(body);
+                showConfigStatus('JSON格式验证通过！', 'success');
+            } catch (error) {
+                showConfigStatus('JSON格式错误：' + error.message, 'error');
+            }
+        }
+
+        function showConfigStatus(message, type) {
+            const statusDiv = document.getElementById('configStatus');
+            statusDiv.style.display = 'block';
+            statusDiv.textContent = message;
+            statusDiv.style.backgroundColor = type === 'success' ? '#d4edda' : '#f8d7da';
+            statusDiv.style.color = type === 'success' ? '#155724' : '#721c24';
+            statusDiv.style.border = `1px solid ${type === 'success' ? '#c3e6cb' : '#f5c6cb'}`;
+            
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        function loadPreset(type) {
+            const presets = {
+                default: {
+                    status: 200,
+                    delay: 0,
+                    contentType: 'application/json',
+                    body: {
+                        success: true,
+                        message: '请求已接收并记录',
+                        timestamp: '{{timestamp}}',
+                        requestId: '{{requestId}}'
+                    }
+                },
+                error: {
+                    status: 400,
+                    delay: 0,
+                    contentType: 'application/json',
+                    body: {
+                        success: false,
+                        error: '请求参数错误',
+                        timestamp: '{{timestamp}}',
+                        code: 'INVALID_REQUEST'
+                    }
+                },
+                custom: {
+                    status: 201,
+                    delay: 500,
+                    contentType: 'application/json',
+                    body: {
+                        success: true,
+                        message: '数据已成功创建',
+                        data: {
+                            id: '{{requestId}}',
+                            method: '{{method}}',
+                            url: '{{url}}',
+                            clientIP: '{{ip}}',
+                            processingTime: '{{processingTime}}ms'
+                        },
+                        timestamp: '{{timestamp}}'
+                    }
+                },
+                webhook: {
+                    status: 200,
+                    delay: 0,
+                    contentType: 'application/json',
+                    body: {
+                        received: true,
+                        webhook_id: '{{requestId}}',
+                        processed_at: '{{timestamp}}',
+                        source_ip: '{{ip}}',
+                        user_agent: '{{userAgent}}'
+                    }
+                }
+            };
+            
+            const preset = presets[type];
+            if (preset) {
+                document.getElementById('responseStatus').value = preset.status;
+                document.getElementById('responseDelay').value = preset.delay;
+                document.getElementById('contentType').value = preset.contentType;
+                document.getElementById('responseBody').value = JSON.stringify(preset.body, null, 2);
+                showConfigStatus(`已加载${type}预设配置`, 'success');
+            }
+        }
+
+        // 统计面板相关函数
+        async function loadStats() {
+            try {
+                const response = await fetch(`${API_BASE}/api/logs?limit=1000`);
+                const data = await response.json();
+                
+                if (data.success && data.stats) {
+                    displayStats(data.stats);
+                }
+            } catch (error) {
+                console.error('加载统计数据失败:', error);
+            }
+        }
+
+        function displayStats(stats) {
+            // 更新统计卡片
+            document.getElementById('statsTotal').textContent = stats.total || 0;
+            document.getElementById('statsToday').textContent = stats.todayCount || 0;
+            document.getElementById('statsWeek').textContent = stats.weekCount || 0;
+            document.getElementById('statsUniqueIPs').textContent = stats.uniqueIPs || 0;
+            
+            // 显示图表
+            displayChart('methodsChart', stats.methods, '请求方法');
+            displayChart('browsersChart', stats.browsers, '浏览器');
+            displayChart('countriesChart', stats.countries, '国家/地区');
+            displayChart('statusChart', stats.statuses, '状态码');
+        }
+
+        function displayChart(elementId, data, title) {
+            const container = document.getElementById(elementId);
+            
+            if (!data || Object.keys(data).length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #6c757d; padding: 20px;">暂无数据</p>';
+                return;
+            }
+            
+            const sortedData = Object.entries(data)
+                .sort(([,a], [,b]) => b - a)
+                .slice(0, 10); // 只显示前10项
+            
+            const total = Object.values(data).reduce((sum, count) => sum + count, 0);
+            
+            let html = '<div style="padding: 15px;">';
+            
+            sortedData.forEach(([key, count]) => {
+                const percentage = ((count / total) * 100).toFixed(1);
+                const barWidth = Math.max(5, percentage);
+                
+                html += `
+                    <div style="margin-bottom: 12px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                            <span style="font-size: 0.9rem; font-weight: 500;">${key}</span>
+                            <span style="font-size: 0.85rem; color: #6c757d;">${count} (${percentage}%)</span>
+                        </div>
+                        <div style="background: #e9ecef; height: 8px; border-radius: 4px; overflow: hidden;">
+                            <div style="background: linear-gradient(90deg, #3498db, #2980b9); height: 100%; width: ${barWidth}%; transition: width 0.3s ease;"></div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
         // 防抖函数
         function debounce(func, wait) {
             let timeout;
@@ -581,6 +1171,21 @@
                 timeout = setTimeout(later, wait);
             };
         }
+
+        // 事件监听
+        document.getElementById('autoRefresh').addEventListener('change', setupAutoRefresh);
+        document.getElementById('methodFilter').addEventListener('change', () => loadLogs(1));
+        document.getElementById('statusFilter').addEventListener('change', () => loadLogs(1));
+        document.getElementById('browserFilter').addEventListener('change', () => loadLogs(1));
+        document.getElementById('bodyTypeFilter').addEventListener('change', () => loadLogs(1));
+        document.getElementById('limitFilter').addEventListener('change', () => loadLogs(1));
+        
+        document.getElementById('searchFilter').addEventListener('input', 
+            debounce(() => loadLogs(1), 500)
+        );
+        document.getElementById('ipFilter').addEventListener('input', 
+            debounce(() => loadLogs(1), 500)
+        );
         
         // 初始化
         loadLogs();
