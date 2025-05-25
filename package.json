@@ -1,6 +1,7 @@
 {
   "name": "api-inspector",
   "version": "1.0.0",
-  "description": "API请求探测工具",
-  "main": "api/inspect.js"
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0"
+  }
 }
