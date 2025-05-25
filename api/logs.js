@@ -67,10 +67,10 @@ export default async function handler(req, res) {
       console.log('📭 没有找到数据');
       
       // 检查表是否存在
-      const { data: tables, error: tablesError } = await supabase
-        .from('information_schema.tables')
-        .select('table_name')
-        .eq('table_name', 'api_requests');
+      const { data: tableCheck, error: tableError } = await supabase
+        .from('api_requests')
+        .select('id')
+        .limit(1);
 
       return res.status(200).json({
         success: true,
@@ -92,8 +92,8 @@ export default async function handler(req, res) {
         },
         debug: {
           message: '没有找到数据',
-          tableExists: !tablesError && tables && tables.length > 0,
-          tablesError: tablesError?.message
+          tableAccessible: !tableError,
+          tableError: tableError?.message
         }
       });
     }

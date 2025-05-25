@@ -86,7 +86,7 @@ export default async function handler(req, res) {
     // 先测试简单查询
     const { data: testData, error: testError } = await supabase
       .from('api_requests')
-      .select('count(*)')
+      .select('id')
       .limit(1);
     
     if (testError) {
