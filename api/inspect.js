@@ -230,17 +230,41 @@ export default async function handler(req, res) {
 
     // 异步保存日志
     if (supabase) {
+      console.log('准备保存日志到数据库...');
+      console.log('supabase客户端状态:', !!supabase);
       setImmediate(async () => {
         try {
+          console.log('开始处理日志数据...');
           requestInfo.processing_time = Date.now() - startTime;
           requestInfo.response_status = finalStatus;
           requestInfo.response_message = finalMessage;
           
-          await supabase.from('api_requests').insert([requestInfo]);
+          console.log('准备写入数据:', {
+            method: requestInfo.method,
+            url: requestInfo.url,
+            status: requestInfo.response_status,
+            time: requestInfo.processing_time
+          });
+          
+          const { data, error: insertError } = await supabase.from('api_requests').insert([requestInfo]);
+          
+          if (insertError) {
+            console.error('数据库写入错误:', insertError);
+            throw insertError;
+          }
+          
+          console.log('日志保存成功:', data);
         } catch (error) {
-          console.error('日志保存失败:', error.message);
+          console.error('日志保存失败，详细错误:', {
+            message: error.message,
+            code: error.code,
+            details: error.details,
+            hint: error.hint
+          });
         }
       });
+    } else {
+      console.error('Supabase客户端未初始化');
     }
 
     // 返回响应
