@@ -1,10 +1,8 @@
-// api/config.js - 配置管理API
+// api/config.js - 生产版配置管理API
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.SUPABASE_URL
 const supabaseKey = process.env.SUPABASE_ANON_KEY
-
-const supabase = createClient(supabaseUrl, supabaseKey)
 
 // 默认配置
 const DEFAULT_CONFIG = {
@@ -20,7 +18,7 @@ const DEFAULT_CONFIG = {
       requestId: '{{requestId}}'
     }
   },
-  delay: 0, // 响应延时（毫秒）
+  delay: 0,
   enableLogging: true
 };
 
@@ -29,13 +27,22 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', '*');
-  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.setHeader('Content-Type', 'application/json');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
   try {
+    if (!supabaseUrl || !supabaseKey) {
+      return res.status(500).json({
+        success: false,
+        error: 'Database configuration error'
+      });
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
     if (req.method === 'GET') {
       // 获取当前配置
       const { data, error } = await supabase
@@ -44,7 +51,7 @@ export default async function handler(req, res) {
         .eq('key', 'inspect_response')
         .single();
 
-      if (error && error.code !== 'PGRST116') { // PGRST116 = not found
+      if (error && error.code !== 'PGRST116') {
         throw error;
       }
 
@@ -65,6 +72,22 @@ export default async function handler(req, res) {
         return res.status(400).json({
           success: false,
           error: '配置格式错误：需要包含response.status'
+        });
+      }
+
+      // 验证状态码范围
+      if (newConfig.response.status < 100 || newConfig.response.status >= 600) {
+        return res.status(400).json({
+          success: false,
+          error: '状态码必须在100-599之间'
+        });
+      }
+
+      // 验证延时范围
+      if (newConfig.delay && (newConfig.delay < 0 || newConfig.delay > 10000)) {
+        return res.status(400).json({
+          success: false,
+          error: '延时必须在0-10000毫秒之间'
         });
       }
 
@@ -95,7 +118,7 @@ export default async function handler(req, res) {
     }
 
   } catch (error) {
-    console.error('配置操作失败:', error);
+    console.error('配置操作失败:', error.message);
     res.status(500).json({
       success: false,
       error: error.message

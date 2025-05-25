@@ -1,17 +1,15 @@
-// api/clear.js - 清空日志API
+// api/clear.js - 生产版清空日志API
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.SUPABASE_URL
 const supabaseKey = process.env.SUPABASE_ANON_KEY
-
-const supabase = createClient(supabaseUrl, supabaseKey)
 
 export default async function handler(req, res) {
   // 设置CORS头
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', '*');
-  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.setHeader('Content-Type', 'application/json');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
@@ -25,6 +23,20 @@ export default async function handler(req, res) {
   }
 
   try {
+    if (!supabaseUrl || !supabaseKey) {
+      return res.status(500).json({
+        success: false,
+        error: 'Database configuration error'
+      });
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // 获取清空前的记录数
+    const { count: beforeCount } = await supabase
+      .from('api_requests')
+      .select('*', { count: 'exact', head: true });
+
     // 删除所有记录
     const { error } = await supabase
       .from('api_requests')
@@ -35,16 +47,15 @@ export default async function handler(req, res) {
       throw error;
     }
 
-    console.log('🗑️ 所有API请求日志已清空');
-
     res.status(200).json({
       success: true,
-      message: '所有日志已成功清空',
+      message: `成功清空 ${beforeCount || 0} 条日志记录`,
+      deletedCount: beforeCount || 0,
       timestamp: new Date().toISOString()
     });
 
   } catch (error) {
-    console.error('清空日志失败:', error);
+    console.error('清空日志失败:', error.message);
     res.status(500).json({
       success: false,
       error: error.message
