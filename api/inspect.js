@@ -1,4 +1,4 @@
-// api/inspect.js - 安全版API探测器（兼容现有数据库结构）
+// api/inspect/[...path].js - 支持多页面监控的动态路由API
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.SUPABASE_URL
@@ -6,29 +6,52 @@ const supabaseKey = process.env.SUPABASE_ANON_KEY
 
 let supabase = null;
 
-// 初始化Supabase客户端
 if (supabaseUrl && supabaseKey) {
   try {
     supabase = createClient(supabaseUrl, supabaseKey)
-    console.log('✅ Supabase客户端初始化成功');
   } catch (error) {
     console.error('❌ Supabase客户端初始化失败:', error);
   }
-} else {
-  console.error('❌ Supabase环境变量未设置');
 }
 
-// 默认响应配置
+// 页面配置映射
+const PAGE_CONFIGS = {
+  'page1': {
+    name: '首页',
+    category: 'main',
+    description: '网站首页监控'
+  },
+  'page2': {
+    name: '产品页',
+    category: 'product',
+    description: '产品展示页面监控'
+  },
+  'checkout': {
+    name: '结算页',
+    category: 'conversion',
+    description: '用户结算流程监控'
+  },
+  'user-profile': {
+    name: '用户中心',
+    category: 'user',
+    description: '用户个人中心监控'
+  },
+  'api-webhook': {
+    name: 'API回调',
+    category: 'api',
+    description: 'Webhook回调监控'
+  }
+};
+
 const DEFAULT_RESPONSE = {
   status: 200,
-  headers: {
-    'Content-Type': 'application/json'
-  },
+  headers: { 'Content-Type': 'application/json' },
   body: {
     success: true,
     message: '请求已接收并记录',
     timestamp: '{{timestamp}}',
-    requestId: '{{requestId}}'
+    requestId: '{{requestId}}',
+    page: '{{page}}'
   }
 };
 
@@ -36,22 +59,32 @@ export default async function handler(req, res) {
   const startTime = Date.now();
   
   try {
-    console.log(`📥 [${new Date().toLocaleString('zh-CN')}] 收到请求: ${req.method} ${req.url}`);
+    // 解析页面路径
+    const pathSegments = req.query.path || [];
+    const pagePath = Array.isArray(pathSegments) ? pathSegments.join('/') : pathSegments;
+    const pageKey = pathSegments[0] || 'default';
+    
+    console.log(`📥 [${new Date().toLocaleString('zh-CN')}] 页面请求: ${pageKey} (${req.method} ${req.url})`);
     
     // 设置CORS头
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', '*');
 
-    // 处理CORS预检请求
     if (req.method === 'OPTIONS') {
-      console.log('🔄 处理CORS预检请求');
       return res.status(200).json({
         success: true,
         message: 'CORS预检请求处理成功',
-        timestamp: new Date().toISOString()
+        page: pageKey
       });
     }
+
+    // 获取页面配置
+    const pageConfig = PAGE_CONFIGS[pageKey] || {
+      name: pageKey || '未知页面',
+      category: 'unknown',
+      description: `动态页面监控: ${pageKey}`
+    };
 
     // 处理请求体
     let rawBody = '';
@@ -78,20 +111,10 @@ export default async function handler(req, res) {
       }
     }
 
-    // 解析查询参数中的特殊指令
+    // 解析特殊参数
     const specialParams = {};
-    if (req.query._status) {
-      const status = parseInt(req.query._status);
-      if (!isNaN(status) && status >= 100 && status < 600) {
-        specialParams.status = status;
-      }
-    }
-    if (req.query._delay) {
-      const delay = parseInt(req.query._delay);
-      if (!isNaN(delay) && delay >= 0 && delay <= 10000) {
-        specialParams.delay = delay;
-      }
-    }
+    if (req.query._status) specialParams.status = parseInt(req.query._status);
+    if (req.query._delay) specialParams.delay = parseInt(req.query._delay);
     if (req.query._message) specialParams.message = req.query._message;
     if (req.query._error) specialParams.error = req.query._error;
 
@@ -99,8 +122,6 @@ export default async function handler(req, res) {
     const clientIP = req.headers['cf-connecting-ip'] || 
                     req.headers['x-forwarded-for']?.split(',')[0]?.trim() || 
                     req.headers['x-real-ip'] || 
-                    req.connection?.remoteAddress || 
-                    req.socket?.remoteAddress ||
                     'unknown';
 
     const userAgent = req.headers['user-agent'] || '';
@@ -111,17 +132,14 @@ export default async function handler(req, res) {
     let os = 'Unknown';
     
     if (userAgent) {
-      // 浏览器检测
       if (userAgent.includes('Chrome') && !userAgent.includes('Edg')) browser = 'Chrome';
       else if (userAgent.includes('Firefox')) browser = 'Firefox';
       else if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) browser = 'Safari';
       else if (userAgent.includes('Edg')) browser = 'Edge';
       else if (userAgent.includes('Opera')) browser = 'Opera';
       else if (userAgent.includes('curl')) browser = 'cURL';
-      else if (userAgent.includes('wget')) browser = 'Wget';
       else if (userAgent.includes('Postman')) browser = 'Postman';
       
-      // 操作系统检测
       if (userAgent.includes('Windows')) os = 'Windows';
       else if (userAgent.includes('Mac OS X') || userAgent.includes('macOS')) os = 'macOS';
       else if (userAgent.includes('Linux')) os = 'Linux';
@@ -129,13 +147,19 @@ export default async function handler(req, res) {
       else if (userAgent.includes('iOS')) os = 'iOS';
     }
 
-    console.log(`👤 客户端信息: IP=${clientIP}, Browser=${browser}, OS=${os}, Bot=${isBot}`);
-
-    // 构建请求信息（只包含数据库中存在的字段）
+    // 构建请求信息（包含页面信息）
     const requestInfo = {
       method: req.method,
       url: req.url,
       full_url: `https://${req.headers.host || 'unknown'}${req.url}`,
+      
+      // 页面相关信息
+      page_key: pageKey,
+      page_name: pageConfig.name,
+      page_category: pageConfig.category,
+      page_path: pagePath,
+      
+      // 客户端信息
       ip: clientIP,
       user_agent: userAgent,
       browser: browser,
@@ -143,6 +167,8 @@ export default async function handler(req, res) {
       is_bot: isBot,
       country: req.headers['cf-ipcountry'] || req.headers['x-vercel-ip-country'] || null,
       city: req.headers['cf-ipcity'] || req.headers['x-vercel-ip-city'] || null,
+      
+      // 请求详情
       headers: JSON.stringify(req.headers),
       content_type: req.headers['content-type'] || null,
       accept: req.headers['accept'] || null,
@@ -152,6 +178,8 @@ export default async function handler(req, res) {
       referer: req.headers['referer'] || null,
       auth_header: req.headers['authorization'] ? '[已隐藏]' : null,
       cookie_info: req.headers['cookie'] ? `[${(req.headers['cookie'].match(/=/g) || []).length}个Cookie]` : null,
+      
+      // 参数和请求体
       query_params: JSON.stringify(req.query || {}),
       query_count: Object.keys(req.query || {}).length,
       body_content: parsedBody ? JSON.stringify(parsedBody) : null,
@@ -159,26 +187,38 @@ export default async function handler(req, res) {
       body_type: bodyType,
       body_size: bodySize,
       special_params: Object.keys(specialParams).length > 0 ? JSON.stringify(specialParams) : null,
+      
       created_at: new Date().toISOString()
     };
 
-    // 获取响应配置
+    // 获取响应配置（可以根据页面定制不同配置）
     let responseConfig = { ...DEFAULT_RESPONSE };
     
     if (supabase) {
       try {
-        const { data } = await supabase
+        // 尝试获取页面特定配置
+        const { data: pageSpecificConfig } = await supabase
           .from('api_config')
           .select('value')
-          .eq('key', 'inspect_response')
+          .eq('key', `inspect_response_${pageKey}`)
           .single();
         
-        if (data?.value?.response) {
-          responseConfig = data.value;
-          console.log('📋 使用自定义响应配置');
+        if (pageSpecificConfig?.value) {
+          responseConfig = pageSpecificConfig.value;
+        } else {
+          // 获取默认配置
+          const { data: defaultConfig } = await supabase
+            .from('api_config')
+            .select('value')
+            .eq('key', 'inspect_response')
+            .single();
+          
+          if (defaultConfig?.value) {
+            responseConfig = defaultConfig.value;
+          }
         }
       } catch (error) {
-        console.log('⚠️ 获取配置失败，使用默认配置:', error.message);
+        console.log('⚠️ 获取配置失败，使用默认配置');
       }
     }
 
@@ -192,28 +232,14 @@ export default async function handler(req, res) {
       responseConfig.response.body = responseConfig.response.body || {};
       responseConfig.response.body.message = specialParams.message;
     }
-    if (specialParams.error) {
-      responseConfig.response = responseConfig.response || {};
-      responseConfig.response.body = responseConfig.response.body || {};
-      responseConfig.response.body.error = specialParams.error;
-      responseConfig.response.body.success = false;
-    }
 
     // 应用延时
     const delay = specialParams.delay || responseConfig.delay;
     if (delay && delay > 0) {
-      console.log(`⏱️ 应用延时: ${delay}ms`);
       await new Promise(resolve => setTimeout(resolve, Math.min(delay, 10000)));
     }
 
-    // 设置响应头
-    if (responseConfig.response?.headers) {
-      Object.entries(responseConfig.response.headers).forEach(([key, value]) => {
-        res.setHeader(key, value);
-      });
-    }
-
-    // 处理响应体和模板变量
+    // 处理响应体模板变量
     let responseBody = responseConfig.response?.body || DEFAULT_RESPONSE.body;
     
     const templateVars = {
@@ -223,7 +249,10 @@ export default async function handler(req, res) {
       '{{url}}': req.url,
       '{{ip}}': clientIP,
       '{{userAgent}}': userAgent,
-      '{{processingTime}}': (Date.now() - startTime).toString()
+      '{{processingTime}}': (Date.now() - startTime).toString(),
+      '{{page}}': pageConfig.name,
+      '{{pageKey}}': pageKey,
+      '{{pageCategory}}': pageConfig.category
     };
 
     let responseBodyStr = JSON.stringify(responseBody);
@@ -234,18 +263,15 @@ export default async function handler(req, res) {
     try {
       responseBody = JSON.parse(responseBodyStr);
     } catch {
-      console.log('⚠️ 模板变量替换失败，使用原始响应体');
+      console.log('⚠️ 模板变量替换失败');
     }
 
     const finalStatus = responseConfig.response?.status || 200;
     const finalMessage = responseBody?.message || '请求已处理';
 
-    // 同步保存日志
+    // 保存日志
     if (supabase) {
       try {
-        console.log('💾 开始保存请求日志...');
-        
-        // 添加处理时间和响应信息（如果字段存在）
         const finalRequestInfo = {
           ...requestInfo,
           processing_time: Date.now() - startTime,
@@ -253,7 +279,6 @@ export default async function handler(req, res) {
           response_message: finalMessage
         };
 
-        // 尝试保存，如果某些字段不存在会被忽略
         const { data, error } = await supabase
           .from('api_requests')
           .insert([finalRequestInfo])
@@ -261,62 +286,23 @@ export default async function handler(req, res) {
 
         if (error) {
           console.error('❌ 数据库插入失败:', error);
-          
-          // 如果是字段不存在的错误，尝试使用基础字段保存
-          if (error.code === 'PGRST204') {
-            console.log('🔄 尝试使用基础字段保存...');
-            
-            const basicRequestInfo = {
-              method: requestInfo.method,
-              url: requestInfo.url,
-              full_url: requestInfo.full_url,
-              ip: requestInfo.ip,
-              user_agent: requestInfo.user_agent,
-              browser: requestInfo.browser,
-              os: requestInfo.os,
-              is_bot: requestInfo.is_bot,
-              country: requestInfo.country,
-              city: requestInfo.city,
-              headers: requestInfo.headers,
-              content_type: requestInfo.content_type,
-              accept: requestInfo.accept,
-              accept_language: requestInfo.accept_language,
-              accept_encoding: requestInfo.accept_encoding,
-              origin: requestInfo.origin,
-              referer: requestInfo.referer,
-              query_params: requestInfo.query_params,
-              query_count: requestInfo.query_count,
-              body_content: requestInfo.body_content,
-              raw_body: requestInfo.raw_body,
-              body_type: requestInfo.body_type,
-              body_size: requestInfo.body_size,
-              created_at: requestInfo.created_at
-            };
-            
-            const { data: basicData, error: basicError } = await supabase
-              .from('api_requests')
-              .insert([basicRequestInfo])
-              .select();
-              
-            if (basicError) {
-              console.error('❌ 基础字段保存也失败:', basicError);
-            } else {
-              console.log('✅ 基础字段保存成功, ID:', basicData?.[0]?.id);
-            }
-          }
         } else {
-          console.log('✅ 请求日志保存成功, ID:', data?.[0]?.id);
+          console.log(`✅ 页面 ${pageConfig.name} 请求日志保存成功, ID: ${data?.[0]?.id}`);
         }
       } catch (saveError) {
         console.error('💥 保存日志异常:', saveError);
       }
-    } else {
-      console.log('⚠️ Supabase未初始化，跳过日志保存');
     }
 
-    console.log(`📤 返回响应: ${finalStatus} - ${finalMessage}`);
+    // 设置响应头
+    if (responseConfig.response?.headers) {
+      Object.entries(responseConfig.response.headers).forEach(([key, value]) => {
+        res.setHeader(key, value);
+      });
+    }
 
-    // 返回响应
+    console.log(`📤 页面 ${pageConfig.name} 返回响应: ${finalStatus}`);
+
     return res.status(finalStatus).json(responseBody);
 
   } catch (error) {

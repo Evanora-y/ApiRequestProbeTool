@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -127,7 +128,10 @@
             font-size: 0.9rem;
         }
 
-        input, select, button, textarea {
+        input,
+        select,
+        button,
+        textarea {
             padding: 10px 15px;
             border: 2px solid #e1e8ed;
             border-radius: 8px;
@@ -135,7 +139,9 @@
             transition: all 0.3s ease;
         }
 
-        input:focus, select:focus, textarea:focus {
+        input:focus,
+        select:focus,
+        textarea:focus {
             outline: none;
             border-color: #3498db;
             box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
@@ -201,12 +207,35 @@
             text-align: center;
         }
 
-        .method-GET { background: #d4edda; color: #155724; }
-        .method-POST { background: #fff3cd; color: #856404; }
-        .method-PUT { background: #cce7ff; color: #004085; }
-        .method-DELETE { background: #f8d7da; color: #721c24; }
-        .method-PATCH { background: #e2e3e5; color: #383d41; }
-        .method-OPTIONS { background: #d1ecf1; color: #0c5460; }
+        .method-GET {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .method-POST {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .method-PUT {
+            background: #cce7ff;
+            color: #004085;
+        }
+
+        .method-DELETE {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .method-PATCH {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+
+        .method-OPTIONS {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
 
         .status-code {
             padding: 4px 8px;
@@ -217,10 +246,25 @@
             text-align: center;
         }
 
-        .status-2xx { background: #d4edda; color: #155724; }
-        .status-3xx { background: #fff3cd; color: #856404; }
-        .status-4xx { background: #f8d7da; color: #721c24; }
-        .status-5xx { background: #f5c6cb; color: #721c24; }
+        .status-2xx {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-3xx {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-4xx {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-5xx {
+            background: #f5c6cb;
+            color: #721c24;
+        }
 
         .log-url {
             font-family: 'Courier New', monospace;
@@ -267,8 +311,15 @@
         }
 
         @keyframes slideDown {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .detail-section {
@@ -316,7 +367,9 @@
             color: #2c3e50;
         }
 
-        .form-group input, .form-group select, .form-group textarea {
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
             width: 100%;
         }
 
@@ -362,8 +415,13 @@
             margin-right: 10px;
         }
 
-        .status-online { background: #28a745; }
-        .status-offline { background: #dc3545; }
+        .status-online {
+            background: #28a745;
+        }
+
+        .status-offline {
+            background: #dc3545;
+        }
 
         .empty-state {
             text-align: center;
@@ -396,24 +454,27 @@
             transition: all 0.3s ease;
         }
 
-        .page-btn:hover, .page-btn.active {
+        .page-btn:hover,
+        .page-btn.active {
             background: #3498db;
             color: white;
             border-color: #3498db;
         }
 
         @media (max-width: 768px) {
-            .control-row, .form-row {
+
+            .control-row,
+            .form-row {
                 flex-direction: column;
                 align-items: stretch;
             }
-            
+
             .log-header {
                 grid-template-columns: 1fr;
                 gap: 10px;
                 text-align: left;
             }
-            
+
             .header h1 {
                 font-size: 1.8rem;
             }
@@ -428,6 +489,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <div class="header">
@@ -471,6 +533,30 @@
                     <div class="control-group">
                         <label>搜索</label>
                         <input type="text" id="searchFilter" class="search-box" placeholder="搜索URL、IP、User-Agent...">
+
+
+                        <label>监控页面</label>
+                        <select id="pageFilter">
+                            <option value="">全部页面</option>
+                            <option value="homepage">首页</option>
+                            <option value="product">产品页</option>
+                            <option value="checkout">结算页</option>
+                            <option value="user-profile">用户中心</option>
+                        </select>
+
+
+                        <label>页面分类</label>
+                        <select id="categoryFilter">
+                            <option value="">全部分类</option>
+                            <option value="main">主要页面</option>
+                            <option value="product">产品相关</option>
+                            <option value="conversion">转化流程</option>
+                            <option value="user">用户功能</option>
+                        </select>
+
+
+
+
                     </div>
                     <div class="control-group">
                         <label>请求方法</label>
@@ -503,7 +589,7 @@
                         </select>
                     </div>
                 </div>
-                
+
                 <div class="control-row">
                     <div class="control-group">
                         <label>IP地址</label>
@@ -531,7 +617,7 @@
                         <button onclick="loadLogs()">🔄 刷新数据</button>
                     </div>
                 </div>
-                
+
                 <div class="control-row">
                     <div style="display: flex; align-items: center; gap: 10px;">
                         <input type="checkbox" id="autoRefresh" checked>
@@ -554,7 +640,7 @@
         <div id="config-tab" class="tab-content">
             <div class="config-form">
                 <h2 style="margin-bottom: 20px;">🔧 API响应配置</h2>
-                
+
                 <div class="preset-buttons">
                     <button class="preset-btn" onclick="loadPreset('default')">默认响应</button>
                     <button class="preset-btn" onclick="loadPreset('error')">错误响应</button>
@@ -593,9 +679,11 @@
 
                 <div class="form-group">
                     <label>响应体 (JSON格式，支持模板变量)</label>
-                    <textarea id="responseBody" class="json-editor" placeholder='{"success": true, "message": "请求已处理", "timestamp": "{{timestamp}}"}'></textarea>
+                    <textarea id="responseBody" class="json-editor"
+                        placeholder='{"success": true, "message": "请求已处理", "timestamp": "{{timestamp}}"}'></textarea>
                     <small style="color: #6c757d; margin-top: 5px; display: block;">
-                        支持的模板变量: {{timestamp}}, {{requestId}}, {{method}}, {{url}}, {{ip}}, {{userAgent}}, {{processingTime}}
+                        支持的模板变量: {{timestamp}}, {{requestId}}, {{method}}, {{url}}, {{ip}}, {{userAgent}},
+                        {{processingTime}}
                     </small>
                 </div>
 
@@ -605,7 +693,8 @@
                     <button onclick="testConfig()">🧪 测试配置</button>
                 </div>
 
-                <div id="configStatus" style="margin-top: 15px; padding: 10px; border-radius: 8px; display: none;"></div>
+                <div id="configStatus" style="margin-top: 15px; padding: 10px; border-radius: 8px; display: none;">
+                </div>
             </div>
         </div>
 
@@ -635,17 +724,17 @@
                     <h3>📊 请求方法分布</h3>
                     <div id="methodsChart"></div>
                 </div>
-                
+
                 <div class="config-form">
                     <h3>💻 浏览器分布</h3>
                     <div id="browsersChart"></div>
                 </div>
-                
+
                 <div class="config-form">
                     <h3>🌍 地区分布</h3>
                     <div id="countriesChart"></div>
                 </div>
-                
+
                 <div class="config-form">
                     <h3>📈 状态码分布</h3>
                     <div id="statusChart"></div>
@@ -657,23 +746,23 @@
     <script>
         let currentPage = 1;
         let autoRefreshInterval;
-        
+
         // 获取API基础URL
         const API_BASE = window.location.origin;
-        
+
         // 标签切换
         function switchTab(tabName) {
             document.querySelectorAll('.tab-content').forEach(content => {
                 content.classList.remove('active');
             });
-            
+
             document.querySelectorAll('.tab').forEach(tab => {
                 tab.classList.remove('active');
             });
-            
+
             document.getElementById(tabName + '-tab').classList.add('active');
             event.target.classList.add('active');
-            
+
             if (tabName === 'logs') {
                 loadLogs();
             } else if (tabName === 'config') {
@@ -686,9 +775,9 @@
         async function loadLogs(page = 1) {
             try {
                 updateStatus('loading');
-                
+
                 const params = new URLSearchParams();
-                
+
                 const search = document.getElementById('searchFilter').value;
                 const method = document.getElementById('methodFilter').value;
                 const status = document.getElementById('statusFilter').value;
@@ -696,7 +785,7 @@
                 const ip = document.getElementById('ipFilter').value;
                 const bodyType = document.getElementById('bodyTypeFilter').value;
                 const limit = document.getElementById('limitFilter').value;
-                
+
                 if (search) params.append('search', search);
                 if (method) params.append('method', method);
                 if (status) params.append('status', status);
@@ -705,10 +794,10 @@
                 if (bodyType) params.append('bodyType', bodyType);
                 if (limit) params.append('limit', limit);
                 params.append('page', page);
-                
+
                 const response = await fetch(`${API_BASE}/api/logs?${params}`);
                 const data = await response.json();
-                
+
                 if (data.success) {
                     displayLogs(data.logs);
                     updateStats(data.stats);
@@ -722,19 +811,19 @@
             } catch (error) {
                 console.error('Error loading logs:', error);
                 updateStatus('offline');
-                document.getElementById('logsContent').innerHTML = 
+                document.getElementById('logsContent').innerHTML =
                     '<div class="empty-state"><h3>❌ 加载失败</h3><p>请检查网络连接或API状态</p></div>';
             }
         }
 
         function displayLogs(logs) {
             const container = document.getElementById('logsContent');
-            
+
             if (logs.length === 0) {
                 container.innerHTML = '<div class="empty-state"><h3>📭 暂无请求</h3><p>等待第三方程序发送请求...</p></div>';
                 return;
             }
-            
+
             const html = logs.map(log => `
                 <div class="log-item">
                     <div class="log-header" onclick="toggleDetails('${log.id}')">
@@ -790,7 +879,7 @@
                     </div>
                 </div>
             `).join('');
-            
+
             container.innerHTML = html;
         }
 
@@ -805,7 +894,7 @@
             const browserFilter = document.getElementById('browserFilter');
             const currentBrowser = browserFilter.value;
             browserFilter.innerHTML = '<option value="">全部浏览器</option>';
-            
+
             if (stats.browsers) {
                 Object.entries(stats.browsers).forEach(([browser, count]) => {
                     const option = document.createElement('option');
@@ -814,7 +903,7 @@
                     browserFilter.appendChild(option);
                 });
             }
-            
+
             if (currentBrowser) {
                 browserFilter.value = currentBrowser;
             }
@@ -822,31 +911,31 @@
 
         function updatePagination(currentPage, totalPages) {
             const pagination = document.getElementById('pagination');
-            
+
             if (totalPages <= 1) {
                 pagination.style.display = 'none';
                 return;
             }
-            
+
             pagination.style.display = 'flex';
-            
+
             let paginationHtml = '';
-            
+
             if (currentPage > 1) {
                 paginationHtml += `<button class="page-btn" onclick="loadLogs(${currentPage - 1})">‹</button>`;
             }
-            
+
             const startPage = Math.max(1, currentPage - 2);
             const endPage = Math.min(totalPages, currentPage + 2);
-            
+
             for (let i = startPage; i <= endPage; i++) {
                 paginationHtml += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="loadLogs(${i})">${i}</button>`;
             }
-            
+
             if (currentPage < totalPages) {
                 paginationHtml += `<button class="page-btn" onclick="loadLogs(${currentPage + 1})">›</button>`;
             }
-            
+
             pagination.innerHTML = paginationHtml;
         }
 
@@ -858,7 +947,7 @@
         function updateStatus(status) {
             const indicator = document.getElementById('statusIndicator');
             const text = document.getElementById('statusText');
-            
+
             switch (status) {
                 case 'online':
                     indicator.className = 'status-indicator status-online';
@@ -877,9 +966,9 @@
 
         function setupAutoRefresh() {
             const checkbox = document.getElementById('autoRefresh');
-            
+
             clearInterval(autoRefreshInterval);
-            
+
             if (checkbox.checked) {
                 autoRefreshInterval = setInterval(() => {
                     if (document.getElementById('logs-tab').classList.contains('active')) {
@@ -895,9 +984,9 @@
                     const response = await fetch(`${API_BASE}/api/clear`, {
                         method: 'DELETE'
                     });
-                    
+
                     const result = await response.json();
-                    
+
                     if (result.success) {
                         alert(`日志已成功清空！删除了 ${result.deletedCount || 0} 条记录`);
                         loadLogs(1);
@@ -918,13 +1007,13 @@
                 const status = item.querySelector('.status-code').textContent;
                 const ip = item.querySelector('.log-ip').textContent;
                 const time = item.querySelector('.log-time').textContent;
-                
+
                 logs.push({ method, url, status, ip, time });
             });
-            
+
             const dataStr = JSON.stringify(logs, null, 2);
-            const dataBlob = new Blob([dataStr], {type: 'application/json'});
-            
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+
             const link = document.createElement('a');
             link.href = URL.createObjectURL(dataBlob);
             link.download = `api-logs-${new Date().toISOString().split('T')[0]}.json`;
@@ -936,15 +1025,15 @@
             try {
                 const response = await fetch(`${API_BASE}/api/config`);
                 const data = await response.json();
-                
+
                 if (data.success) {
                     const config = data.config.response || {};
-                    
+
                     document.getElementById('responseStatus').value = config.status || 200;
                     document.getElementById('responseDelay').value = data.config.delay || 0;
                     document.getElementById('contentType').value = config.headers?.['Content-Type'] || 'application/json';
                     document.getElementById('responseBody').value = JSON.stringify(config.body || {}, null, 2);
-                    
+
                     showConfigStatus('配置加载成功', 'success');
                 } else {
                     showConfigStatus('配置加载失败: ' + data.error, 'error');
@@ -967,7 +1056,7 @@
                     delay: parseInt(document.getElementById('responseDelay').value) || 0,
                     enableLogging: true
                 };
-                
+
                 const response = await fetch(`${API_BASE}/api/config`, {
                     method: 'POST',
                     headers: {
@@ -975,9 +1064,9 @@
                     },
                     body: JSON.stringify(config)
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (result.success) {
                     showConfigStatus('配置保存成功！', 'success');
                 } else {
@@ -1009,7 +1098,7 @@
             statusDiv.style.backgroundColor = type === 'success' ? '#d4edda' : '#f8d7da';
             statusDiv.style.color = type === 'success' ? '#155724' : '#721c24';
             statusDiv.style.border = `1px solid ${type === 'success' ? '#c3e6cb' : '#f5c6cb'}`;
-            
+
             setTimeout(() => {
                 statusDiv.style.display = 'none';
             }, 5000);
@@ -1069,7 +1158,7 @@
                     }
                 }
             };
-            
+
             const preset = presets[type];
             if (preset) {
                 document.getElementById('responseStatus').value = preset.status;
@@ -1085,7 +1174,7 @@
             try {
                 const response = await fetch(`${API_BASE}/api/logs?limit=1000`);
                 const data = await response.json();
-                
+
                 if (data.success && data.stats) {
                     displayStats(data.stats);
                 }
@@ -1099,7 +1188,7 @@
             document.getElementById('statsToday').textContent = stats.todayCount || 0;
             document.getElementById('statsWeek').textContent = stats.weekCount || 0;
             document.getElementById('statsUniqueIPs').textContent = stats.uniqueIPs || 0;
-            
+
             displayChart('methodsChart', stats.methods, '请求方法');
             displayChart('browsersChart', stats.browsers, '浏览器');
             displayChart('countriesChart', stats.countries, '国家/地区');
@@ -1108,24 +1197,24 @@
 
         function displayChart(elementId, data, title) {
             const container = document.getElementById(elementId);
-            
+
             if (!data || Object.keys(data).length === 0) {
                 container.innerHTML = '<p style="text-align: center; color: #6c757d; padding: 20px;">暂无数据</p>';
                 return;
             }
-            
+
             const sortedData = Object.entries(data)
-                .sort(([,a], [,b]) => b - a)
+                .sort(([, a], [, b]) => b - a)
                 .slice(0, 10);
-            
+
             const total = Object.values(data).reduce((sum, count) => sum + count, 0);
-            
+
             let html = '<div style="padding: 15px;">';
-            
+
             sortedData.forEach(([key, count]) => {
                 const percentage = ((count / total) * 100).toFixed(1);
                 const barWidth = Math.max(5, percentage);
-                
+
                 html += `
                     <div style="margin-bottom: 12px;">
                         <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
@@ -1138,7 +1227,7 @@
                     </div>
                 `;
             });
-            
+
             html += '</div>';
             container.innerHTML = html;
         }
@@ -1163,17 +1252,18 @@
         document.getElementById('browserFilter').addEventListener('change', () => loadLogs(1));
         document.getElementById('bodyTypeFilter').addEventListener('change', () => loadLogs(1));
         document.getElementById('limitFilter').addEventListener('change', () => loadLogs(1));
-        
-        document.getElementById('searchFilter').addEventListener('input', 
+
+        document.getElementById('searchFilter').addEventListener('input',
             debounce(() => loadLogs(1), 500)
         );
-        document.getElementById('ipFilter').addEventListener('input', 
+        document.getElementById('ipFilter').addEventListener('input',
             debounce(() => loadLogs(1), 500)
         );
-        
+
         // 初始化
         loadLogs();
         setupAutoRefresh();
     </script>
 </body>
+
 </html>

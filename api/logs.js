@@ -27,11 +27,11 @@ export default async function handler(req, res) {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // 获取查询参数
-    const { 
-      limit = 50, 
-      method, 
-      ip, 
-      since, 
+    const {
+      limit = 50,
+      method,
+      ip,
+      since,
       status,
       search,
       browser,
@@ -39,9 +39,11 @@ export default async function handler(req, res) {
       country,
       hasBody,
       bodyType,
-      page = 1
+      page = 1,
+      pageKey,        // 新增
+      pageCategory    // 新增
     } = req.query;
-    
+
     let query = supabase
       .from('api_requests')
       .select('*', { count: 'exact' })
@@ -58,7 +60,9 @@ export default async function handler(req, res) {
     if (hasBody === 'true') query = query.not('body_content', 'is', null);
     if (hasBody === 'false') query = query.is('body_content', null);
     if (since) query = query.gte('created_at', since);
-    
+    if (pageKey) query = query.eq('page_key', pageKey);
+    if (pageCategory) query = query.eq('page_category', pageCategory);
+
     // 搜索功能
     if (search) {
       query = query.or(`url.ilike.%${search}%,user_agent.ilike.%${search}%,ip.ilike.%${search}%,referer.ilike.%${search}%`);
@@ -68,7 +72,7 @@ export default async function handler(req, res) {
     const pageNum = Math.max(1, parseInt(page));
     const limitNum = Math.min(parseInt(limit), 100);
     const offset = (pageNum - 1) * limitNum;
-    
+
     query = query.range(offset, offset + limitNum - 1);
 
     const { data: logs, error, count } = await query;
@@ -156,7 +160,7 @@ export default async function handler(req, res) {
 function safeJsonParse(jsonString, fallback = null) {
   if (!jsonString) return fallback;
   if (typeof jsonString === 'object') return jsonString;
-  
+
   try {
     return JSON.parse(jsonString);
   } catch {
@@ -224,32 +228,32 @@ function calculateStats(data) {
     if (item.method) {
       stats.methods[item.method] = (stats.methods[item.method] || 0) + 1;
     }
-    
+
     // 统计状态码
     if (item.response_status) {
       stats.statuses[item.response_status] = (stats.statuses[item.response_status] || 0) + 1;
     }
-    
+
     // 统计浏览器
     if (item.browser && item.browser !== 'Unknown') {
       stats.browsers[item.browser] = (stats.browsers[item.browser] || 0) + 1;
     }
-    
+
     // 统计操作系统
     if (item.os && item.os !== 'Unknown') {
       stats.operatingSystems[item.os] = (stats.operatingSystems[item.os] || 0) + 1;
     }
-    
+
     // 统计国家
     if (item.country) {
       stats.countries[item.country] = (stats.countries[item.country] || 0) + 1;
     }
-    
+
     // 统计请求体类型
     if (item.body_type && item.body_type !== 'empty') {
       stats.bodyTypes[item.body_type] = (stats.bodyTypes[item.body_type] || 0) + 1;
     }
-    
+
     // 时间统计
     const itemDate = new Date(item.created_at);
     if (itemDate >= today) {
@@ -258,13 +262,13 @@ function calculateStats(data) {
     if (itemDate >= weekAgo) {
       stats.weekCount++;
     }
-    
+
     // 处理时间统计
     if (item.processing_time) {
       totalProcessingTime += item.processing_time;
       processingTimeCount++;
     }
-    
+
     // 唯一IP统计
     if (item.ip && item.ip !== 'unknown') {
       stats.uniqueIPs.add(item.ip);
