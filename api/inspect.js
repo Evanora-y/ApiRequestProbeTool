@@ -1,14 +1,18 @@
-// api/inspect.js - 主要的探测API
-let requestLogs = []; // 内存存储（简单方案）
-const MAX_LOGS = 100; // 最多保存100条记录
+// api/inspect.js - 使用Supabase存储
+import { createClient } from '@supabase/supabase-js'
+
+// Supabase配置 - 需要在环境变量中设置
+const supabaseUrl = process.env.SUPABASE_URL
+const supabaseKey = process.env.SUPABASE_ANON_KEY
+
+const supabase = createClient(supabaseUrl, supabaseKey)
 
 export default async function handler(req, res) {
-  // 获取原始请求体
+  // 处理请求体
   let rawBody = '';
   let parsedBody = null;
   let bodyType = 'empty';
 
-  // 处理请求体
   if (req.body) {
     try {
       if (typeof req.body === 'string') {
@@ -35,50 +39,42 @@ export default async function handler(req, res) {
     }
   }
 
-  // 构建请求信息对象
+  // 构建请求信息
   const requestInfo = {
-    id: Date.now() + Math.random().toString(36).substr(2, 9),
-    timestamp: new Date().toISOString(),
-    localTime: new Date().toLocaleString('zh-CN'),
     method: req.method,
     url: req.url,
-    fullUrl: `https://${req.headers.host}${req.url}`,
-    
-    // 客户端信息
+    full_url: `https://${req.headers.host}${req.url}`,
     ip: req.headers['x-forwarded-for'] || 
         req.headers['x-real-ip'] || 
-        req.connection?.remoteAddress || 
         'unknown',
-    userAgent: req.headers['user-agent'],
-    
-    // 请求头
-    headers: req.headers,
-    
-    // URL查询参数
-    query: req.query || {},
-    
-    // 请求体信息
-    body: parsedBody,
-    rawBody: rawBody,
-    bodyType: bodyType,
-    
-    // 其他信息
-    contentType: req.headers['content-type'],
-    contentLength: req.headers['content-length'],
+    user_agent: req.headers['user-agent'],
+    headers: JSON.stringify(req.headers),
+    query_params: JSON.stringify(req.query || {}),
+    body_content: parsedBody ? JSON.stringify(parsedBody) : null,
+    raw_body: rawBody,
+    body_type: bodyType,
+    content_type: req.headers['content-type'],
+    content_length: req.headers['content-length'],
     origin: req.headers.origin,
     referer: req.headers.referer,
-    
-    // 处理时间
-    processedAt: Date.now()
+    created_at: new Date().toISOString()
   };
 
-  // 存储到内存中（保持最新的100条记录）
-  requestLogs.unshift(requestInfo);
-  if (requestLogs.length > MAX_LOGS) {
-    requestLogs = requestLogs.slice(0, MAX_LOGS);
-  }
+  try {
+    // 存储到Supabase
+    const { data, error } = await supabase
+      .from('api_requests')
+      .insert([requestInfo])
+      .select();
 
-  console.log(`📥 [${requestInfo.localTime}] ${req.method} ${req.url} from ${requestInfo.ip}`);
+    if (error) {
+      console.error('Supabase插入错误:', error);
+    }
+
+    console.log(`📥 [${new Date().toLocaleString('zh-CN')}] ${req.method} ${req.url} from ${requestInfo.ip}`);
+  } catch (error) {
+    console.error('存储请求信息失败:', error);
+  }
 
   // 设置CORS头
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -86,23 +82,15 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', '*');
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
 
-  // 处理CORS预检请求
   if (req.method === 'OPTIONS') {
-    return res.status(200).json({
-      message: 'CORS预检请求处理成功',
-      timestamp: requestInfo.timestamp,
-      success: true
-    });
+    return res.status(200).json({ success: true, message: 'CORS预检请求处理成功' });
   }
 
-  // 返回给第三方程序的简单响应
+  // 返回给第三方程序的响应
   res.status(200).json({
     success: true,
-    message: '请求已接收',
-    timestamp: requestInfo.timestamp,
-    requestId: requestInfo.id
+    message: '请求已接收并记录',
+    timestamp: new Date().toISOString(),
+    requestId: Date.now().toString()
   });
 }
-
-// 导出requestLogs供其他API使用
-export { requestLogs };
