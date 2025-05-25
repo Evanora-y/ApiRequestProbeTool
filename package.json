@@ -1,7 +1,26 @@
 {
-  "name": "api-inspector",
+  "name": "api-request-monitor",
   "version": "1.0.0",
+  "description": "API请求监控系统 - 探测和分析第三方程序的API调用行为",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "echo 'No build process needed'",
+    "deploy": "vercel --prod"
+  },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0"
+  },
+  "keywords": [
+    "api",
+    "monitor",
+    "webhook",
+    "debugging",
+    "request-inspector"
+  ],
+  "author": "API Monitor System",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
   }
 }

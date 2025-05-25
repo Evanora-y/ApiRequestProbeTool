@@ -206,6 +206,7 @@
         .method-PUT { background: #cce7ff; color: #004085; }
         .method-DELETE { background: #f8d7da; color: #721c24; }
         .method-PATCH { background: #e2e3e5; color: #383d41; }
+        .method-OPTIONS { background: #d1ecf1; color: #0c5460; }
 
         .status-code {
             padding: 4px 8px;
@@ -480,6 +481,7 @@
                             <option value="PUT">PUT</option>
                             <option value="DELETE">DELETE</option>
                             <option value="PATCH">PATCH</option>
+                            <option value="OPTIONS">OPTIONS</option>
                         </select>
                     </div>
                     <div class="control-group">
@@ -487,6 +489,7 @@
                         <select id="statusFilter">
                             <option value="">全部状态</option>
                             <option value="200">200 成功</option>
+                            <option value="201">201 已创建</option>
                             <option value="400">400 错误请求</option>
                             <option value="401">401 未授权</option>
                             <option value="404">404 未找到</option>
@@ -660,23 +663,17 @@
         
         // 标签切换
         function switchTab(tabName) {
-            // 隐藏所有标签内容
             document.querySelectorAll('.tab-content').forEach(content => {
                 content.classList.remove('active');
             });
             
-            // 移除所有标签的active类
             document.querySelectorAll('.tab').forEach(tab => {
                 tab.classList.remove('active');
             });
             
-            // 显示选中的标签内容
             document.getElementById(tabName + '-tab').classList.add('active');
-            
-            // 给选中的标签添加active类
             event.target.classList.add('active');
             
-            // 根据标签执行相应的初始化
             if (tabName === 'logs') {
                 loadLogs();
             } else if (tabName === 'config') {
@@ -720,7 +717,7 @@
                     updateStatus('online');
                     currentPage = page;
                 } else {
-                    throw new Error('获取数据失败');
+                    throw new Error(data.error || '获取数据失败');
                 }
             } catch (error) {
                 console.error('Error loading logs:', error);
@@ -805,7 +802,6 @@
         }
 
         function updateFilters(stats) {
-            // 更新浏览器过滤器
             const browserFilter = document.getElementById('browserFilter');
             const currentBrowser = browserFilter.value;
             browserFilter.innerHTML = '<option value="">全部浏览器</option>';
@@ -836,12 +832,10 @@
             
             let paginationHtml = '';
             
-            // 上一页
             if (currentPage > 1) {
                 paginationHtml += `<button class="page-btn" onclick="loadLogs(${currentPage - 1})">‹</button>`;
             }
             
-            // 页码
             const startPage = Math.max(1, currentPage - 2);
             const endPage = Math.min(totalPages, currentPage + 2);
             
@@ -849,7 +843,6 @@
                 paginationHtml += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="loadLogs(${i})">${i}</button>`;
             }
             
-            // 下一页
             if (currentPage < totalPages) {
                 paginationHtml += `<button class="page-btn" onclick="loadLogs(${currentPage + 1})">›</button>`;
             }
@@ -906,7 +899,7 @@
                     const result = await response.json();
                     
                     if (result.success) {
-                        alert('日志已成功清空！');
+                        alert(`日志已成功清空！删除了 ${result.deletedCount || 0} 条记录`);
                         loadLogs(1);
                     } else {
                         alert('清空失败：' + result.error);
@@ -918,7 +911,6 @@
         }
 
         function exportLogs() {
-            // 简单的导出当前页面数据
             const logs = [];
             document.querySelectorAll('.log-item').forEach(item => {
                 const method = item.querySelector('.log-method').textContent;
@@ -927,13 +919,7 @@
                 const ip = item.querySelector('.log-ip').textContent;
                 const time = item.querySelector('.log-time').textContent;
                 
-                logs.push({
-                    method,
-                    url,
-                    status,
-                    ip,
-                    time
-                });
+                logs.push({ method, url, status, ip, time });
             });
             
             const dataStr = JSON.stringify(logs, null, 2);
@@ -961,7 +947,7 @@
                     
                     showConfigStatus('配置加载成功', 'success');
                 } else {
-                    showConfigStatus('配置加载失败', 'error');
+                    showConfigStatus('配置加载失败: ' + data.error, 'error');
                 }
             } catch (error) {
                 showConfigStatus('配置加载失败：' + error.message, 'error');
@@ -1109,13 +1095,11 @@
         }
 
         function displayStats(stats) {
-            // 更新统计卡片
             document.getElementById('statsTotal').textContent = stats.total || 0;
             document.getElementById('statsToday').textContent = stats.todayCount || 0;
             document.getElementById('statsWeek').textContent = stats.weekCount || 0;
             document.getElementById('statsUniqueIPs').textContent = stats.uniqueIPs || 0;
             
-            // 显示图表
             displayChart('methodsChart', stats.methods, '请求方法');
             displayChart('browsersChart', stats.browsers, '浏览器');
             displayChart('countriesChart', stats.countries, '国家/地区');
@@ -1132,7 +1116,7 @@
             
             const sortedData = Object.entries(data)
                 .sort(([,a], [,b]) => b - a)
-                .slice(0, 10); // 只显示前10项
+                .slice(0, 10);
             
             const total = Object.values(data).reduce((sum, count) => sum + count, 0);
             

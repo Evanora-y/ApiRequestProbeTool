@@ -1,7 +1,16 @@
 {
   "functions": {
     "api/inspect.js": {
+      "maxDuration": 30
+    },
+    "api/logs.js": {
+      "maxDuration": 30
+    },
+    "api/config.js": {
       "maxDuration": 10
+    },
+    "api/clear.js": {
+      "maxDuration": 60
     }
   },
   "rewrites": [
@@ -12,6 +21,18 @@
     {
       "source": "/inspect/(.*)",
       "destination": "/api/inspect"
+    },
+    {
+      "source": "/logs",
+      "destination": "/api/logs"
+    },
+    {
+      "source": "/config",
+      "destination": "/api/config"
+    },
+    {
+      "source": "/clear",
+      "destination": "/api/clear"
     }
   ]
 }
