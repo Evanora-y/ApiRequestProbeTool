@@ -19,10 +19,6 @@
       "destination": "/api/inspect"
     },
     {
-      "source": "/inspect/(.*)",
-      "destination": "/api/inspect"
-    },
-    {
       "source": "/logs",
       "destination": "/api/logs"
     },
