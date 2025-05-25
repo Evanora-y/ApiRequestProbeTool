@@ -1,3 +1,7 @@
+// api/inspect.js - 主要的探测API
+let requestLogs = []; // 内存存储（简单方案）
+const MAX_LOGS = 100; // 最多保存100条记录
+
 export default async function handler(req, res) {
   // 获取原始请求体
   let rawBody = '';
@@ -10,7 +14,6 @@ export default async function handler(req, res) {
       if (typeof req.body === 'string') {
         rawBody = req.body;
         bodyType = 'text';
-        // 尝试解析为JSON
         try {
           parsedBody = JSON.parse(req.body);
           bodyType = 'json';
@@ -34,10 +37,12 @@ export default async function handler(req, res) {
 
   // 构建请求信息对象
   const requestInfo = {
-    // 基本请求信息
+    id: Date.now() + Math.random().toString(36).substr(2, 9),
     timestamp: new Date().toISOString(),
+    localTime: new Date().toLocaleString('zh-CN'),
     method: req.method,
     url: req.url,
+    fullUrl: `https://${req.headers.host}${req.url}`,
     
     // 客户端信息
     ip: req.headers['x-forwarded-for'] || 
@@ -46,18 +51,8 @@ export default async function handler(req, res) {
         'unknown',
     userAgent: req.headers['user-agent'],
     
-    // 请求头（排除敏感信息）
-    headers: Object.fromEntries(
-      Object.entries(req.headers).filter(([key]) => 
-        !['cookie', 'authorization'].includes(key.toLowerCase())
-      )
-    ),
-    
-    // 敏感头信息（单独处理）
-    sensitiveHeaders: {
-      cookie: req.headers.cookie ? '[已隐藏]' : undefined,
-      authorization: req.headers.authorization ? '[已隐藏]' : undefined,
-    },
+    // 请求头
+    headers: req.headers,
     
     // URL查询参数
     query: req.query || {},
@@ -67,34 +62,23 @@ export default async function handler(req, res) {
     rawBody: rawBody,
     bodyType: bodyType,
     
-    // 其他有用信息
+    // 其他信息
     contentType: req.headers['content-type'],
     contentLength: req.headers['content-length'],
     origin: req.headers.origin,
     referer: req.headers.referer,
     
-    // Vercel特定信息
-    vercelRegion: req.headers['x-vercel-deployment-url'],
-    vercelId: req.headers['x-vercel-id'],
+    // 处理时间
+    processedAt: Date.now()
   };
 
-  // 在Vercel的日志中打印信息
-  console.log('\n' + '='.repeat(60));
-  console.log(`📥 [${requestInfo.timestamp}] ${req.method} ${req.url}`);
-  console.log(`🌐 IP: ${requestInfo.ip}`);
-  console.log(`🔧 User-Agent: ${requestInfo.userAgent}`);
-  
-  if (Object.keys(requestInfo.query).length > 0) {
-    console.log('🔍 查询参数:', JSON.stringify(requestInfo.query, null, 2));
+  // 存储到内存中（保持最新的100条记录）
+  requestLogs.unshift(requestInfo);
+  if (requestLogs.length > MAX_LOGS) {
+    requestLogs = requestLogs.slice(0, MAX_LOGS);
   }
-  
-  if (parsedBody && bodyType !== 'empty') {
-    console.log(`📦 请求体 (${bodyType}):`);
-    console.log(typeof parsedBody === 'object' ? 
-      JSON.stringify(parsedBody, null, 2) : parsedBody);
-  }
-  
-  console.log('='.repeat(60));
+
+  console.log(`📥 [${requestInfo.localTime}] ${req.method} ${req.url} from ${requestInfo.ip}`);
 
   // 设置CORS头
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -106,15 +90,19 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') {
     return res.status(200).json({
       message: 'CORS预检请求处理成功',
-      timestamp: requestInfo.timestamp
+      timestamp: requestInfo.timestamp,
+      success: true
     });
   }
 
-  // 返回探测结果
+  // 返回给第三方程序的简单响应
   res.status(200).json({
-    message: '✅ 请求信息探测成功',
     success: true,
-    platform: 'Vercel Serverless',
-    ...requestInfo
+    message: '请求已接收',
+    timestamp: requestInfo.timestamp,
+    requestId: requestInfo.id
   });
 }
+
+// 导出requestLogs供其他API使用
+export { requestLogs };
