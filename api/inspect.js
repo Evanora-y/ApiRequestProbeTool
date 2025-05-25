@@ -1,4 +1,4 @@
-// api/inspect.js - 生产版API探测器
+// api/inspect.js - 修复版API探测器
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.SUPABASE_URL
@@ -8,7 +8,14 @@ let supabase = null;
 
 // 初始化Supabase客户端
 if (supabaseUrl && supabaseKey) {
-  supabase = createClient(supabaseUrl, supabaseKey)
+  try {
+    supabase = createClient(supabaseUrl, supabaseKey)
+    console.log('✅ Supabase客户端初始化成功');
+  } catch (error) {
+    console.error('❌ Supabase客户端初始化失败:', error);
+  }
+} else {
+  console.error('❌ Supabase环境变量未设置');
 }
 
 // 默认响应配置
@@ -29,6 +36,8 @@ export default async function handler(req, res) {
   const startTime = Date.now();
   
   try {
+    console.log(`📥 [${new Date().toLocaleString('zh-CN')}] 收到请求: ${req.method} ${req.url}`);
+    
     // 设置CORS头
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
@@ -36,6 +45,7 @@ export default async function handler(req, res) {
 
     // 处理CORS预检请求
     if (req.method === 'OPTIONS') {
+      console.log('🔄 处理CORS预检请求');
       return res.status(200).json({
         success: true,
         message: 'CORS预检请求处理成功',
@@ -119,6 +129,8 @@ export default async function handler(req, res) {
       else if (userAgent.includes('iOS')) os = 'iOS';
     }
 
+    console.log(`👤 客户端信息: IP=${clientIP}, Browser=${browser}, OS=${os}, Bot=${isBot}`);
+
     // 构建请求信息
     const requestInfo = {
       method: req.method,
@@ -165,9 +177,10 @@ export default async function handler(req, res) {
         
         if (data?.value?.response) {
           responseConfig = data.value;
+          console.log('📋 使用自定义响应配置');
         }
       } catch (error) {
-        // 使用默认配置
+        console.log('⚠️ 获取配置失败，使用默认配置:', error.message);
       }
     }
 
@@ -191,6 +204,7 @@ export default async function handler(req, res) {
     // 应用延时
     const delay = specialParams.delay || responseConfig.delay;
     if (delay && delay > 0) {
+      console.log(`⏱️ 应用延时: ${delay}ms`);
       await new Promise(resolve => setTimeout(resolve, Math.min(delay, 10000)));
     }
 
@@ -222,61 +236,54 @@ export default async function handler(req, res) {
     try {
       responseBody = JSON.parse(responseBodyStr);
     } catch {
-      // 使用原始响应体
+      console.log('⚠️ 模板变量替换失败，使用原始响应体');
     }
 
     const finalStatus = responseConfig.response?.status || 200;
     const finalMessage = responseBody?.message || '请求已处理';
 
-    // 保存日志
+    // 同步保存日志（重要：确保保存成功）
     if (supabase) {
-      console.log('准备保存日志到数据库...');
-      console.log('supabase客户端状态:', !!supabase);
       try {
-        console.log('开始处理日志数据...');
+        console.log('💾 开始保存请求日志...');
+        
         requestInfo.processing_time = Date.now() - startTime;
         requestInfo.response_status = finalStatus;
         requestInfo.response_message = finalMessage;
         
-        console.log('准备写入数据:', {
-          method: requestInfo.method,
-          url: requestInfo.url,
-          status: requestInfo.response_status,
-          time: requestInfo.processing_time
-        });
-        
-        const { data, error: insertError } = await supabase.from('api_requests').insert([requestInfo]);
-        
-        if (insertError) {
-          console.error('数据库写入错误:', insertError);
-          throw insertError;
+        const { data, error } = await supabase
+          .from('api_requests')
+          .insert([requestInfo])
+          .select();
+
+        if (error) {
+          console.error('❌ 数据库插入失败:', error);
+          console.error('插入的数据:', JSON.stringify(requestInfo, null, 2));
+        } else {
+          console.log('✅ 请求日志保存成功, ID:', data?.[0]?.id);
         }
-        
-        console.log('日志保存成功:', data);
-      } catch (error) {
-        console.error('日志保存失败，详细错误:', {
-          message: error.message,
-          code: error.code,
-          details: error.details,
-          hint: error.hint
-        });
+      } catch (saveError) {
+        console.error('💥 保存日志异常:', saveError);
       }
     } else {
-      console.error('Supabase客户端未初始化');
+      console.log('⚠️ Supabase未初始化，跳过日志保存');
     }
+
+    console.log(`📤 返回响应: ${finalStatus} - ${finalMessage}`);
 
     // 返回响应
     return res.status(finalStatus).json(responseBody);
 
   } catch (error) {
-    console.error('API处理错误:', error.message);
+    console.error('💥 API处理错误:', error);
     
     res.setHeader('Content-Type', 'application/json');
     return res.status(500).json({
       success: false,
       error: 'Internal Server Error',
       message: '服务器内部错误',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      debug: error.message
     });
   }
 }
