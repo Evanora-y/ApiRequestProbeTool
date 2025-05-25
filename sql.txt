@@ -1,0 +1,81 @@
+-- 删除现有表（如果存在问题）
+DROP TABLE IF EXISTS api_requests CASCADE;
+DROP TABLE IF EXISTS api_config CASCADE;
+
+-- 创建API请求日志表
+CREATE TABLE api_requests (
+  id BIGSERIAL PRIMARY KEY,
+  method VARCHAR(10) NOT NULL,
+  url TEXT NOT NULL,
+  full_url TEXT,
+  protocol VARCHAR(10) DEFAULT 'https',
+  ip VARCHAR(50),
+  user_agent TEXT,
+  browser VARCHAR(50) DEFAULT 'Unknown',
+  os VARCHAR(50) DEFAULT 'Unknown',
+  is_bot BOOLEAN DEFAULT FALSE,
+  country VARCHAR(10),
+  city VARCHAR(100),
+  headers JSONB,
+  content_type VARCHAR(100),
+  accept VARCHAR(200),
+  accept_language VARCHAR(100),
+  accept_encoding VARCHAR(100),
+  origin VARCHAR(200),
+  referer TEXT,
+  auth_header VARCHAR(20),  -- 改名避免保留字冲突
+  cookie_info VARCHAR(50),  -- 改名避免保留字冲突
+  query_params JSONB,
+  query_count INTEGER DEFAULT 0,
+  body_content JSONB,
+  raw_body TEXT,
+  body_type VARCHAR(20) DEFAULT 'empty',
+  body_size INTEGER DEFAULT 0,
+  special_params JSONB,
+  processing_time INTEGER,
+  response_status INTEGER DEFAULT 200,
+  response_message TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 创建配置表
+CREATE TABLE api_config (
+  id BIGSERIAL PRIMARY KEY,
+  key VARCHAR(100) UNIQUE NOT NULL,
+  value JSONB NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 创建索引
+CREATE INDEX idx_api_requests_created_at ON api_requests(created_at DESC);
+CREATE INDEX idx_api_requests_method ON api_requests(method);
+CREATE INDEX idx_api_requests_ip ON api_requests(ip);
+CREATE INDEX idx_api_requests_response_status ON api_requests(response_status);
+CREATE INDEX idx_api_requests_browser ON api_requests(browser);
+CREATE INDEX idx_api_requests_os ON api_requests(os);
+CREATE INDEX idx_api_requests_country ON api_requests(country);
+CREATE INDEX idx_api_config_key ON api_config(key);
+
+-- 启用行级安全
+ALTER TABLE api_requests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE api_config ENABLE ROW LEVEL SECURITY;
+
+-- 创建策略允许所有操作
+CREATE POLICY "Allow all operations on api_requests" ON api_requests FOR ALL USING (true);
+CREATE POLICY "Allow all operations on api_config" ON api_config FOR ALL USING (true);
+
+-- 插入测试数据验证
+INSERT INTO api_requests (
+  method, url, full_url, ip, user_agent, browser, os,
+  headers, query_params, body_type, response_status, response_message
+) VALUES (
+  'GET', '/api/inspect?test=setup', 'https://test.vercel.app/api/inspect?test=setup',
+  '127.0.0.1', 'Setup Test Agent', 'Chrome', 'Windows',
+  '{"user-agent": "Setup Test Agent"}', '{"test": "setup"}',
+  'empty', 200, '数据库设置测试'
+);
+
+-- 验证数据
+SELECT COUNT(*) as total_records FROM api_requests;
+SELECT * FROM api_requests ORDER BY created_at DESC LIMIT 1;

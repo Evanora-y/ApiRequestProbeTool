@@ -1,4 +1,4 @@
-// api/logs.js - 调试版本
+// api/logs.js - 简化测试版本
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.SUPABASE_URL
@@ -17,12 +17,9 @@ export default async function handler(req, res) {
 
   try {
     console.log('🔍 开始查询日志...');
-    console.log('环境变量检查:');
-    console.log('SUPABASE_URL:', supabaseUrl ? '已设置' : '未设置');
-    console.log('SUPABASE_ANON_KEY:', supabaseKey ? '已设置' : '未设置');
 
     if (!supabaseUrl || !supabaseKey) {
-      return res.status(500).json({
+      return res.status(200).json({
         success: false,
         error: 'Supabase环境变量未设置',
         logs: []
@@ -30,48 +27,28 @@ export default async function handler(req, res) {
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
-    console.log('✅ Supabase客户端已初始化');
 
-    // 获取查询参数
-    const { limit = 20 } = req.query;
-    console.log('查询参数:', { limit });
-
-    // 执行查询
-    const { data: logs, error, count } = await supabase
+    // 简单查询，获取最新10条记录
+    const { data: logs, error } = await supabase
       .from('api_requests')
-      .select('*', { count: 'exact' })
+      .select('*')
       .order('created_at', { ascending: false })
-      .limit(parseInt(limit));
+      .limit(10);
 
-    console.log('查询结果:');
-    console.log('- 错误:', error);
-    console.log('- 数据数量:', logs ? logs.length : 0);
-    console.log('- 总数:', count);
+    console.log('查询结果:', { error, dataCount: logs ? logs.length : 0 });
 
     if (error) {
       console.error('❌ 查询失败:', error);
-      return res.status(500).json({
+      return res.status(200).json({
         success: false,
         error: error.message,
         logs: [],
-        debug: {
-          code: error.code,
-          details: error.details,
-          hint: error.hint
-        }
+        debug: error
       });
     }
 
-    // 如果没有数据，返回调试信息
     if (!logs || logs.length === 0) {
-      console.log('📭 没有找到数据');
-      
-      // 检查表是否存在
-      const { data: tableCheck, error: tableError } = await supabase
-        .from('api_requests')
-        .select('id')
-        .limit(1);
-
+      console.log('📭 没有数据');
       return res.status(200).json({
         success: true,
         total: 0,
@@ -80,131 +57,93 @@ export default async function handler(req, res) {
         stats: {
           total: 0,
           todayCount: 0,
-          weekCount: 0,
           uniqueIPs: 0,
           avgProcessingTime: 0,
           methods: {},
-          statuses: {},
           browsers: {},
-          operatingSystems: {},
           countries: {},
-          bodyTypes: {}
+          statuses: {}
         },
-        debug: {
-          message: '没有找到数据',
-          tableAccessible: !tableError,
-          tableError: tableError?.message
-        }
+        lastUpdate: null,
+        debug: '没有找到数据'
       });
     }
 
-    console.log('✅ 查询成功，处理数据...');
-
-    // 处理日志数据
+    // 简单处理数据，避免复杂的JSON解析
     const processedLogs = logs.map(log => ({
       id: log.id,
       timestamp: log.created_at,
       localTime: new Date(log.created_at).toLocaleString('zh-CN'),
-      method: log.method,
-      url: log.url,
-      fullUrl: log.full_url,
-      ip: log.ip,
-      userAgent: log.user_agent,
+      method: log.method || 'UNKNOWN',
+      url: log.url || '',
+      fullUrl: log.full_url || '',
+      ip: log.ip || 'unknown',
+      userAgent: log.user_agent || '',
       browser: log.browser || 'Unknown',
       os: log.os || 'Unknown',
-      isBot: log.is_bot || false,
-      country: log.country,
-      city: log.city,
-      headers: log.headers ? JSON.parse(log.headers) : {},
-      query: log.query_params ? JSON.parse(log.query_params) : {},
-      queryCount: log.query_count || 0,
-      body: log.body_content ? JSON.parse(log.body_content) : null,
-      rawBody: log.raw_body,
+      country: log.country || null,
+      headers: {}, // 简化，先不解析复杂JSON
+      query: {}, // 简化
+      body: null, // 简化
       bodyType: log.body_type || 'empty',
-      bodySize: log.body_size || 0,
-      contentType: log.content_type,
-      origin: log.origin,
-      referer: log.referer,
+      contentType: log.content_type || null,
       responseStatus: log.response_status || 200,
-      responseMessage: log.response_message,
+      responseMessage: log.response_message || '',
       processingTime: log.processing_time || 0,
       processedAt: new Date(log.created_at).getTime()
     }));
 
-    // 基础统计
+    // 简单统计
     const stats = {
-      total: count || logs.length,
-      todayCount: 0,
-      weekCount: 0,
+      total: logs.length,
+      todayCount: logs.length, // 简化
       uniqueIPs: new Set(logs.map(log => log.ip)).size,
       avgProcessingTime: Math.round(
         logs.reduce((sum, log) => sum + (log.processing_time || 0), 0) / logs.length
-      ),
+      ) || 0,
       methods: {},
-      statuses: {},
       browsers: {},
-      operatingSystems: {},
       countries: {},
-      bodyTypes: {}
+      statuses: {}
     };
 
-    // 统计各项数据
+    // 统计方法
     logs.forEach(log => {
-      // 方法统计
-      stats.methods[log.method] = (stats.methods[log.method] || 0) + 1;
+      const method = log.method || 'UNKNOWN';
+      stats.methods[method] = (stats.methods[method] || 0) + 1;
       
-      // 状态码统计
-      const status = log.response_status || 200;
-      stats.statuses[status] = (stats.statuses[status] || 0) + 1;
-      
-      // 浏览器统计
       const browser = log.browser || 'Unknown';
       if (browser !== 'Unknown') {
         stats.browsers[browser] = (stats.browsers[browser] || 0) + 1;
       }
       
-      // 操作系统统计
-      const os = log.os || 'Unknown';
-      if (os !== 'Unknown') {
-        stats.operatingSystems[os] = (stats.operatingSystems[os] || 0) + 1;
-      }
-      
-      // 国家统计
       if (log.country) {
         stats.countries[log.country] = (stats.countries[log.country] || 0) + 1;
       }
       
-      // 请求体类型统计
-      const bodyType = log.body_type || 'empty';
-      if (bodyType !== 'empty') {
-        stats.bodyTypes[bodyType] = (stats.bodyTypes[bodyType] || 0) + 1;
-      }
+      const status = log.response_status || 200;
+      stats.statuses[status] = (stats.statuses[status] || 0) + 1;
     });
 
-    console.log('✅ 数据处理完成，返回结果');
+    console.log('✅ 返回数据:', processedLogs.length, '条记录');
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
-      total: count || logs.length,
+      total: logs.length,
       filtered: processedLogs.length,
       logs: processedLogs,
       stats: stats,
-      lastUpdate: processedLogs.length > 0 ? processedLogs[0].timestamp : null,
-      debug: {
-        rawDataCount: logs.length,
-        processedDataCount: processedLogs.length
-      }
+      lastUpdate: processedLogs[0]?.timestamp || null,
+      debug: `成功获取 ${processedLogs.length} 条记录`
     });
 
   } catch (error) {
-    console.error('💥 查询日志异常:', error);
-    res.status(500).json({
+    console.error('💥 查询异常:', error);
+    return res.status(500).json({
       success: false,
       error: error.message,
       logs: [],
-      debug: {
-        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-      }
+      debug: error.stack
     });
   }
 }
