@@ -40,68 +40,8 @@
 
 #### 创建数据表
 
-在Supabase的 **SQL Editor** 中执行以下SQL：
+数据库信息在sql表
 
-sql
-
-```sql
--- 创建API请求日志表
-CREATE TABLE api_requests (
-  id BIGSERIAL PRIMARY KEY,
-  method VARCHAR(10) NOT NULL,
-  url TEXT NOT NULL,
-  full_url TEXT,
-  protocol VARCHAR(10) DEFAULT 'https',
-  ip VARCHAR(50),
-  user_agent TEXT,
-  browser VARCHAR(50) DEFAULT 'Unknown',
-  os VARCHAR(50) DEFAULT 'Unknown',
-  is_bot BOOLEAN DEFAULT FALSE,
-  country VARCHAR(10),
-  city VARCHAR(100),
-  headers JSONB,
-  content_type VARCHAR(100),
-  accept VARCHAR(200),
-  accept_language VARCHAR(100),
-  accept_encoding VARCHAR(100),
-  origin VARCHAR(200),
-  referer TEXT,
-  auth_header VARCHAR(20),
-  cookie_info VARCHAR(50),
-  query_params JSONB,
-  query_count INTEGER DEFAULT 0,
-  body_content JSONB,
-  raw_body TEXT,
-  body_type VARCHAR(20) DEFAULT 'empty',
-  body_size INTEGER DEFAULT 0,
-  special_params JSONB,
-  processing_time INTEGER,
-  response_status INTEGER DEFAULT 200,
-  response_message TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- 创建配置表
-CREATE TABLE api_config (
-  id BIGSERIAL PRIMARY KEY,
-  key VARCHAR(100) UNIQUE NOT NULL,
-  value JSONB NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- 创建索引
-CREATE INDEX idx_api_requests_created_at ON api_requests(created_at DESC);
-CREATE INDEX idx_api_requests_method ON api_requests(method);
-CREATE INDEX idx_api_requests_ip ON api_requests(ip);
-CREATE INDEX idx_api_requests_response_status ON api_requests(response_status);
-
--- 启用行级安全并创建策略
-ALTER TABLE api_requests ENABLE ROW LEVEL SECURITY;
-ALTER TABLE api_config ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow all operations on api_requests" ON api_requests FOR ALL USING (true);
-CREATE POLICY "Allow all operations on api_config" ON api_config FOR ALL USING (true);
-```
 
 ### 2. 部署到Vercel
 
@@ -114,24 +54,10 @@ project/
 │   ├── logs.js         # 日志查询API
 │   ├── config.js       # 配置管理API
 │   └── clear.js        # 清空日志API
-├── dashboard.html      # 管理面板
 ├── package.json        # 依赖配置
 └── vercel.json        # Vercel配置（可选）
 ```
 
-#### package.json
-
-json
-
-```json
-{
-  "name": "api-inspector",
-  "version": "1.0.0",
-  "dependencies": {
-    "@supabase/supabase-js": "^2.39.0"
-  }
-}
-```
 
 #### 部署步骤
 
@@ -147,7 +73,7 @@ json
 ### 🔗 访问地址
 
 - **API探测端点**: `https://你的域名.vercel.app/api/inspect`
-- **管理面板**: `https://你的域名.vercel.app/dashboard.html`
+- **管理面板**: `https://你的域名.vercel.app/`
 
 ### 📊 管理面板功能
 
@@ -348,14 +274,6 @@ curl "https://你的域名.vercel.app/api/inspect?_status=201&_delay=1000&_messa
 1. 查看Vercel函数日志获取详细错误信息
 2. 使用浏览器开发者工具检查网络请求
 3. 在Supabase中直接查询数据库验证数据存储
-
-## 📞 技术支持
-
-这个系统基于现代云原生架构，具有高可用性和可扩展性。如果你在使用过程中遇到问题，可以：
-
-1. 检查Vercel和Supabase的服务状态
-2. 查看详细的错误日志进行问题定位
-3. 根据错误信息调整配置或代码
 
 ------
 
