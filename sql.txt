@@ -1,71 +1,44 @@
--- ===============================================
--- API请求监控系统 - 完整数据库表结构
--- 适用于 Supabase PostgreSQL
--- ===============================================
-
--- 删除现有表（如果需要重新创建）
+-- 删除现有表（如果存在问题）
 DROP TABLE IF EXISTS api_requests CASCADE;
 DROP TABLE IF EXISTS api_config CASCADE;
 
--- ===============================================
--- 1. 创建API请求日志表
--- ===============================================
+-- 创建API请求日志表
 CREATE TABLE api_requests (
-  -- 主键和基本信息
   id BIGSERIAL PRIMARY KEY,
   method VARCHAR(10) NOT NULL,
   url TEXT NOT NULL,
   full_url TEXT,
   protocol VARCHAR(10) DEFAULT 'https',
-  
-  -- 客户端信息
   ip VARCHAR(50),
   user_agent TEXT,
   browser VARCHAR(50) DEFAULT 'Unknown',
   os VARCHAR(50) DEFAULT 'Unknown',
   is_bot BOOLEAN DEFAULT FALSE,
-  
-  -- 地理位置信息
   country VARCHAR(10),
   city VARCHAR(100),
-  
-  -- 请求头信息
   headers JSONB,
   content_type VARCHAR(100),
-  content_length VARCHAR(20),
-  accept VARCHAR(500),
+  accept VARCHAR(200),
   accept_language VARCHAR(100),
   accept_encoding VARCHAR(100),
   origin VARCHAR(200),
   referer TEXT,
-  auth_header VARCHAR(20),
-  cookie_info VARCHAR(50),
-  
-  -- URL参数信息
+  auth_header VARCHAR(20),  -- 改名避免保留字冲突
+  cookie_info VARCHAR(50),  -- 改名避免保留字冲突
   query_params JSONB,
   query_count INTEGER DEFAULT 0,
-  
-  -- 请求体信息
   body_content JSONB,
   raw_body TEXT,
   body_type VARCHAR(20) DEFAULT 'empty',
   body_size INTEGER DEFAULT 0,
-  
-  -- 特殊参数
   special_params JSONB,
-  
-  -- 处理和响应信息
   processing_time INTEGER,
   response_status INTEGER DEFAULT 200,
   response_message TEXT,
-  
-  -- 时间戳
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- ===============================================
--- 2. 创建API配置表
--- ===============================================
+-- 创建配置表
 CREATE TABLE api_config (
   id BIGSERIAL PRIMARY KEY,
   key VARCHAR(100) UNIQUE NOT NULL,
@@ -74,215 +47,35 @@ CREATE TABLE api_config (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- ===============================================
--- 3. 创建索引（优化查询性能）
--- ===============================================
-
--- 主要查询索引
+-- 创建索引
 CREATE INDEX idx_api_requests_created_at ON api_requests(created_at DESC);
 CREATE INDEX idx_api_requests_method ON api_requests(method);
 CREATE INDEX idx_api_requests_ip ON api_requests(ip);
 CREATE INDEX idx_api_requests_response_status ON api_requests(response_status);
-
--- 统计分析索引
 CREATE INDEX idx_api_requests_browser ON api_requests(browser);
 CREATE INDEX idx_api_requests_os ON api_requests(os);
 CREATE INDEX idx_api_requests_country ON api_requests(country);
-CREATE INDEX idx_api_requests_body_type ON api_requests(body_type);
-CREATE INDEX idx_api_requests_is_bot ON api_requests(is_bot);
-
--- 配置表索引
 CREATE INDEX idx_api_config_key ON api_config(key);
-CREATE INDEX idx_api_config_updated_at ON api_config(updated_at DESC);
 
--- ===============================================
--- 4. 启用行级安全策略 (RLS)
--- ===============================================
+-- 启用行级安全
 ALTER TABLE api_requests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE api_config ENABLE ROW LEVEL SECURITY;
 
--- 创建允许所有操作的策略（适用于API服务）
-CREATE POLICY "Allow all operations on api_requests" 
-ON api_requests FOR ALL 
-USING (true);
+-- 创建策略允许所有操作
+CREATE POLICY "Allow all operations on api_requests" ON api_requests FOR ALL USING (true);
+CREATE POLICY "Allow all operations on api_config" ON api_config FOR ALL USING (true);
 
-CREATE POLICY "Allow all operations on api_config" 
-ON api_config FOR ALL 
-USING (true);
-
--- ===============================================
--- 5. 创建有用的视图
--- ===============================================
-
--- 请求统计视图
-CREATE VIEW request_stats AS
-SELECT 
-  DATE(created_at) as date,
-  COUNT(*) as total_requests,
-  COUNT(DISTINCT ip) as unique_ips,
-  COUNT(*) FILTER (WHERE is_bot = true) as bot_requests,
-  AVG(processing_time) as avg_processing_time,
-  COUNT(*) FILTER (WHERE response_status >= 200 AND response_status < 300) as success_requests,
-  COUNT(*) FILTER (WHERE response_status >= 400) as error_requests
-FROM api_requests 
-GROUP BY DATE(created_at)
-ORDER BY date DESC;
-
--- 热门路径视图
-CREATE VIEW popular_paths AS
-SELECT 
-  url,
-  COUNT(*) as request_count,
-  COUNT(DISTINCT ip) as unique_visitors,
-  MAX(created_at) as last_accessed
-FROM api_requests 
-GROUP BY url
-ORDER BY request_count DESC;
-
--- 客户端统计视图
-CREATE VIEW client_stats AS
-SELECT 
-  browser,
-  os,
-  country,
-  COUNT(*) as request_count,
-  COUNT(DISTINCT ip) as unique_ips
-FROM api_requests 
-WHERE browser != 'Unknown' OR os != 'Unknown'
-GROUP BY browser, os, country
-ORDER BY request_count DESC;
-
--- ===============================================
--- 6. 插入默认配置数据
--- ===============================================
-INSERT INTO api_config (key, value, created_at, updated_at) VALUES (
-  'inspect_response',
-  '{
-    "response": {
-      "status": 200,
-      "headers": {
-        "Content-Type": "application/json"
-      },
-      "body": {
-        "success": true,
-        "message": "请求已接收并记录",
-        "timestamp": "{{timestamp}}",
-        "requestId": "{{requestId}}"
-      }
-    },
-    "delay": 0,
-    "enableLogging": true
-  }'::jsonb,
-  NOW(),
-  NOW()
-) ON CONFLICT (key) DO NOTHING;
-
--- ===============================================
--- 7. 创建清理函数（可选）
--- ===============================================
-
--- 清理旧数据的函数（保留最近30天的数据）
-CREATE OR REPLACE FUNCTION cleanup_old_requests()
-RETURNS INTEGER AS $$
-DECLARE
-  deleted_count INTEGER;
-BEGIN
-  DELETE FROM api_requests 
-  WHERE created_at < NOW() - INTERVAL '30 days';
-  
-  GET DIAGNOSTICS deleted_count = ROW_COUNT;
-  
-  RETURN deleted_count;
-END;
-$$ LANGUAGE plpgsql;
-
--- 创建定时清理任务（需要pg_cron扩展，Supabase Pro版本支持）
--- SELECT cron.schedule('cleanup-old-requests', '0 2 * * *', 'SELECT cleanup_old_requests();');
-
--- ===============================================
--- 8. 数据验证和约束
--- ===============================================
-
--- 添加检查约束
-ALTER TABLE api_requests ADD CONSTRAINT check_method 
-CHECK (method IN ('GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD'));
-
-ALTER TABLE api_requests ADD CONSTRAINT check_response_status 
-CHECK (response_status >= 100 AND response_status < 600);
-
-ALTER TABLE api_requests ADD CONSTRAINT check_processing_time 
-CHECK (processing_time >= 0);
-
-ALTER TABLE api_requests ADD CONSTRAINT check_body_size 
-CHECK (body_size >= 0);
-
--- ===============================================
--- 9. 创建触发器（自动更新时间戳）
--- ===============================================
-
--- 自动更新 updated_at 字段的函数
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = NOW();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
--- 为 api_config 表创建触发器
-CREATE TRIGGER update_api_config_updated_at 
-BEFORE UPDATE ON api_config 
-FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
--- ===============================================
--- 10. 验证表结构
--- ===============================================
-
--- 查看表结构
-\d api_requests;
-\d api_config;
-
--- 查看索引
-SELECT tablename, indexname, indexdef 
-FROM pg_indexes 
-WHERE tablename IN ('api_requests', 'api_config')
-ORDER BY tablename, indexname;
-
--- 验证约束
-SELECT conname, contype, conkey 
-FROM pg_constraint 
-WHERE conrelid IN (
-  SELECT oid FROM pg_class WHERE relname IN ('api_requests', 'api_config')
-);
-
--- ===============================================
--- 11. 插入测试数据（可选）
--- ===============================================
+-- 插入测试数据验证
 INSERT INTO api_requests (
   method, url, full_url, ip, user_agent, browser, os,
   headers, query_params, body_type, response_status, response_message
 ) VALUES (
-  'GET', 
-  '/api/inspect?test=setup', 
-  'https://your-domain.vercel.app/api/inspect?test=setup',
-  '127.0.0.1', 
-  'Database Setup Test Agent', 
-  'Chrome', 
-  'Windows',
-  '{"user-agent": "Database Setup Test Agent"}'::jsonb,
-  '{"test": "setup"}'::jsonb,
-  'empty', 
-  200, 
-  '数据库设置测试'
+  'GET', '/api/inspect?test=setup', 'https://test.vercel.app/api/inspect?test=setup',
+  '127.0.0.1', 'Setup Test Agent', 'Chrome', 'Windows',
+  '{"user-agent": "Setup Test Agent"}', '{"test": "setup"}',
+  'empty', 200, '数据库设置测试'
 );
 
--- ===============================================
--- 完成！表结构创建完毕
--- ===============================================
-
--- 最终验证
-SELECT 'api_requests表记录数:' as info, COUNT(*) as count FROM api_requests
-UNION ALL
-SELECT 'api_config表记录数:' as info, COUNT(*) as count FROM api_config;
-
-SELECT '✅ 数据库表结构创建完成！' as status;
+-- 验证数据
+SELECT COUNT(*) as total_records FROM api_requests;
+SELECT * FROM api_requests ORDER BY created_at DESC LIMIT 1;
