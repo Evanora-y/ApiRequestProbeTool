@@ -1,0 +1,17 @@
+{
+  "functions": {
+    "api/inspect.js": {
+      "maxDuration": 10
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/inspect",
+      "destination": "/api/inspect"
+    },
+    {
+      "source": "/inspect/(.*)",
+      "destination": "/api/inspect"
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "name": "api-inspector",
+  "version": "1.0.0",
+  "description": "API请求探测工具",
+  "main": "api/inspect.js"
+}
